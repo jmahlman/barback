@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       "./node_modules/better-sqlite3/build/Release/*.node",
     ],
   },
+  // The floating dev-tools badge in the corner. It only ever renders in
+  // development, never in a build, but it sits on top of the UI while
+  // working on the layout.
+  devIndicators: false,
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "www.thecocktaildb.com" },
