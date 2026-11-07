@@ -15,7 +15,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# The schema comes first: package.json has a postinstall that generates the
+# Prisma client, and it cannot do that without the schema to generate from.
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 RUN npm ci
 
 # ---------------------------------------------------------------------------

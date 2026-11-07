@@ -14,6 +14,7 @@
     "url": "https://github.com/jmahlman/barback/issues"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "node scripts/generate-licenses.mjs && prisma generate && next build",
     "start": "next start",
