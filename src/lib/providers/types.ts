@@ -47,6 +47,8 @@ export interface ProviderCapabilities {
   multiIngredientFilter: boolean;
   /** Maximum results a single query can return, if capped. */
   resultLimit: number | null;
+  /** Can hand over its whole catalogue, so matching happens locally. */
+  catalogue: boolean;
 }
 
 export interface CocktailProvider {
@@ -71,6 +73,15 @@ export interface CocktailProvider {
    * and rely on the cache instead.
    */
   lookupById(externalId: string): Promise<ProviderDrink | null>;
+
+  /**
+   * Fetch everything the provider has, for providers that will hand it over.
+   *
+   * This is the better way to do discovery where it is available: pull the
+   * catalogue once, cache it, and match against the shelf locally for ever
+   * after. `onProgress` reports how far along it is.
+   */
+  fetchCatalogue?(onProgress?: (done: number, total: number) => void): Promise<ProviderDrink[]>;
 }
 
 /** Build the namespaced cache/URL key for a drink. */

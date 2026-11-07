@@ -140,9 +140,9 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
   const anchorsUsed = chosen.map((c) => c.name);
 
   const chain = await providerChain();
-  const collected = new Map<string, ProviderDrink>();
   const providersUsed = new Set<string>();
   const errors: string[] = [];
+  let fetched = 0;
 
   for (const provider of chain) {
     if (!(await provider.isConfigured())) {
@@ -150,61 +150,81 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
       continue;
     }
 
-    let providerFailed = false;
-
-    for (const anchor of chosen) {
-      // A previous scan may already cover this ingredient.
-      const cachedKeys = await getCachedQuery(provider.id, "i", anchor.slug);
-      if (cachedKeys) {
-        for (const key of cachedKeys) {
-          const existing = collected.get(key);
-          if (!existing) {
-            const fromCache = (await allCachedDrinks()).find((d) => d.key === key);
-            if (fromCache) collected.set(key, fromCache);
-          }
-        }
+    // Preferred: take the whole catalogue once and match locally. The
+    // alternative, querying per ingredient, is barely usable on free tiers —
+    // TheCocktailDB's free key returns a single drink per ingredient.
+    if (provider.capabilities.catalogue && provider.fetchCatalogue) {
+      const key = `catalogue:${provider.id}`;
+      const cached = await getCachedQuery(provider.id, "catalogue", key);
+      if (cached) {
         providersUsed.add(provider.label);
-        continue;
+        fetched = cached.length;
+        break;
       }
 
       try {
-        const drinks = await provider.findByIngredient(anchor.slug);
+        const drinks = await provider.fetchCatalogue();
         await cacheDrinks(drinks);
         await setCachedQuery(
           provider.id,
-          "i",
-          anchor.slug,
+          "catalogue",
+          key,
           drinks.map((d) => d.key),
         );
-        for (const drink of drinks) collected.set(drink.key, drink);
+        providersUsed.add(provider.label);
+        fetched = drinks.length;
+        break;
+      } catch (error) {
+        errors.push(
+          error instanceof ProviderError ? error.message : `${provider.label} failed.`,
+        );
+        continue;
+      }
+    }
+
+    // Otherwise, ask about each thing on the shelf in turn.
+    let providerFailed = false;
+    for (const anchor of chosen) {
+      const cachedKeys = await getCachedQuery(provider.id, "i", anchor.slug);
+      if (cachedKeys) {
+        providersUsed.add(provider.label);
+        continue;
+      }
+      try {
+        const drinks = await provider.findByIngredient(anchor.slug);
+        await cacheDrinks(drinks);
+        await setCachedQuery(provider.id, "i", anchor.slug, drinks.map((d) => d.key));
+        fetched += drinks.length;
         providersUsed.add(provider.label);
       } catch (error) {
-        const message =
-          error instanceof ProviderError ? error.message : `${provider.label} failed.`;
-        errors.push(message);
+        errors.push(
+          error instanceof ProviderError ? error.message : `${provider.label} failed.`,
+        );
         providerFailed = true;
         break;
       }
     }
-
-    // The preferred provider worked, so there is no reason to also hit the
-    // fallback and mix two sets of results together.
-    if (!providerFailed && collected.size > 0) break;
+    if (!providerFailed) break;
   }
 
-  if (collected.size === 0) {
+  const everything = await allCachedDrinks();
+
+  if (everything.length === 0) {
     return {
       ...EMPTY,
       anchorsUsed,
-      error: errors.length > 0 ? errors.join(" ") : "No cocktails came back.",
+      error:
+        errors.length > 0
+          ? errors.join(" ")
+          : "No cocktails came back. Check that a provider is configured in Settings.",
     };
   }
 
-  // Score against everything known, not just this scan's results.
-  const everything = await allCachedDrinks();
   return assemble(everything, inventory, savedKeys, {
     anchorsUsed,
     providersUsed: [...providersUsed],
+    // Surfaced even on success, so a partial result is not read as a full one.
+    error: errors.length > 0 ? errors.join(" ") : null,
   });
 }
 

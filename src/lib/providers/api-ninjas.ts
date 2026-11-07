@@ -133,6 +133,8 @@ export const apiNinjasProvider: CocktailProvider = {
     stableIds: false,
     multiIngredientFilter: true,
     resultLimit: 10,
+    // No endpoint that lists everything; discovery queries per ingredient.
+    catalogue: false,
   },
 
   async isConfigured() {

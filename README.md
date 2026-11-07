@@ -119,12 +119,21 @@ Two services are supported. Pick one on the Settings page.
 | Measures | separate field | embedded in the text, parsed out |
 | Stable links to a drink | yes | no — matched by name |
 | Results per search | unlimited | 10 |
-| Multi-ingredient search | no (free tier) | yes |
+| Multi-ingredient search | premium only | yes |
+| Ingredient search, free key | **1 result** | up to 10 |
 | Free tier | non-commercial, key `1` | non-commercial, monthly quota |
 
 **TheCocktailDB is the default and the better fit.** Barback is a visual
 recipe app, and it is the only one of the two with photographs, glassware and
 stable per-drink links.
+
+Its free key does cripple one thing: `filter.php?i=<ingredient>` returns a
+single drink, and filtering on several ingredients at once is premium-only.
+Searching your shelf one ingredient at a time would therefore return a
+handful of arbitrary cocktails. Barback works around it by downloading the
+whole catalogue once — about 440 drinks, complete with ingredients and
+measures — and matching locally from then on. That is roughly 36 requests,
+made once, and everything afterwards is offline.
 
 API Ninjas is worth having as an alternative: it is the only one that can
 filter on several ingredients at once, and it is a useful second source if

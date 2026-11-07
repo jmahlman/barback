@@ -29,8 +29,11 @@ export async function scanShelf(): Promise<ScanResult> {
   if (result.emptyInventory) {
     return { ok: false, error: "Add something to your inventory first." };
   }
-  if (result.error) {
-    return { ok: false, error: result.error };
+
+  // Only a failure when nothing came back at all. A provider that stumbled
+  // while another succeeded is worth saying, not worth throwing results away.
+  if (result.considered === 0) {
+    return { ok: false, error: result.error ?? "No cocktails came back." };
   }
 
   revalidatePath("/discover");
@@ -39,6 +42,7 @@ export async function scanShelf(): Promise<ScanResult> {
     found: result.considered,
     makeable: result.makeable.length,
     providers: result.providersUsed,
+    error: result.error ?? undefined,
   };
 }
 

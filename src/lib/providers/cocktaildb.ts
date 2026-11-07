@@ -143,14 +143,17 @@ export const cocktailDbProvider: CocktailProvider = {
   id: "cocktaildb",
   label: "TheCocktailDB",
   description:
-    "Photos, glassware and category metadata, with measures already separated from ingredient names. The free development key is rate limited and not licensed for public instances.",
+    "Photos, glassware and category metadata, with measures already separated from ingredient names. Its free key returns only one drink per ingredient search, so Barback downloads the whole catalogue once and matches your shelf locally instead. Not licensed for public instances.",
   attribution:
     "Recipe data and imagery: TheCocktailDB (https://www.thecocktaildb.com/)",
   capabilities: {
     images: true,
     stableIds: true,
     multiIngredientFilter: false,
+    // filter.php returns a single drink on the free development key, so
+    // discovery pulls the catalogue instead. See fetchCatalogue below.
     resultLimit: null,
+    catalogue: true,
   },
 
   async isConfigured() {
@@ -177,6 +180,52 @@ export const cocktailDbProvider: CocktailProvider = {
     const ids = (data?.drinks ?? []).map((d) => d.idDrink);
     if (ids.length === 0) return [];
     return lookupMany(ids);
+  },
+
+  /**
+   * Pull the whole catalogue, a letter at a time.
+   *
+   * `search.php?f=<letter>` is the one free endpoint that returns complete
+   * drinks — ingredients, measures, instructions and all — rather than ids
+   * to look up one by one. Thirty-six requests gets everything TheCocktailDB
+   * has, after which matching against the shelf never needs the network
+   * again.
+   *
+   * This exists because `filter.php?i=<ingredient>` returns exactly ONE
+   * drink on the free development key, which made ingredient-led discovery
+   * useless: eight shelf ingredients produced eight arbitrary cocktails.
+   */
+  async fetchCatalogue(onProgress?: (done: number, total: number) => void) {
+    const letters = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
+    const found = new Map<string, ProviderDrink>();
+    let failures = 0;
+
+    for (const [index, letter] of letters.entries()) {
+      try {
+        const data = await apiGet<{ drinks: RawDrink[] | null }>(
+          `search.php?f=${letter}`,
+        );
+        for (const raw of data?.drinks ?? []) {
+          const drink = toProviderDrink(raw);
+          found.set(drink.key, drink);
+        }
+      } catch {
+        // One bad letter should not lose the other thirty-five.
+        failures += 1;
+      }
+      onProgress?.(index + 1, letters.length);
+    }
+
+    if (found.size === 0) {
+      throw new ProviderError(
+        failures > 0
+          ? "TheCocktailDB could not be reached."
+          : "TheCocktailDB returned nothing.",
+        "cocktaildb",
+      );
+    }
+
+    return [...found.values()];
   },
 
   async lookupById(externalId: string) {
