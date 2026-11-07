@@ -1,0 +1,62 @@
+{
+  "name": "barback",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted home bartender companion: inventory, recipe book, and what-can-I-make discovery.",
+  "license": "AGPL-3.0-or-later",
+  "author": "John Mahlman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmahlman/barback.git"
+  },
+  "homepage": "https://github.com/jmahlman/barback",
+  "bugs": {
+    "url": "https://github.com/jmahlman/barback/issues"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/generate-licenses.mjs && prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts",
+    "licenses": "node scripts/generate-licenses.mjs"
+  },
+  "dependencies": {
+    "@better-auth/prisma-adapter": "1.7.18",
+    "@prisma/adapter-better-sqlite3": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "better-auth": "1.7.18",
+    "next": "16.4.5",
+    "prisma": "7.10.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "server-only": "^0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.5",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  },
+  "allowScripts": {
+    "prisma@7.10.1": true,
+    "better-sqlite3@12.11.1": true,
+    "@prisma/engines@7.10.1": true,
+    "esbuild@0.28.2": true
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

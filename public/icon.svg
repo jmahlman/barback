@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Barback">
+  <rect width="64" height="64" rx="14" fill="#141217"/>
+  <path d="M16 18h32L34 34v12h7a2 2 0 0 1 0 4H23a2 2 0 0 1 0-4h7V34L16 18Z"
+        fill="none" stroke="#dca845" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="41" cy="25" r="3" fill="#d4566a"/>
+</svg>

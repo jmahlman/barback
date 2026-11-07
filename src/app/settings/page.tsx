@@ -1,0 +1,233 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { AppShell, PageBody, PageHeader } from "@/components/app-shell";
+import { SettingsForm, type ProviderView } from "@/components/settings-form";
+import { SignOutButton } from "@/components/sign-out-button";
+import { ChevronRightIcon } from "@/components/icons";
+import { isOwner } from "@/lib/owner";
+import { PROVIDER_LIST } from "@/lib/providers/registry";
+import { cachedCountsByProvider } from "@/lib/providers/cache";
+import {
+  getSetting,
+  getSettingSource,
+  maskSecret,
+  SETTING_KEYS,
+} from "@/lib/settings";
+import { signupsAllowed } from "@/lib/auth";
+import { hasPasswordSession, requireUser } from "@/lib/session";
+import {
+  getReleaseState,
+  maybeAutoCheck,
+  pendingUpdateTag,
+} from "@/lib/releases";
+import {
+  AUTH_MODES,
+  AUTH_MODE_ENV,
+  AUTH_MODE_LOCKED,
+  HAS_SESSION_SECRET,
+  describeMode,
+  getAuthMode,
+} from "@/lib/auth-mode";
+import {
+  AuthModeSettings,
+  type AuthModeOption,
+} from "@/components/auth-mode-settings";
+
+export const metadata: Metadata = { title: "Settings" };
+
+const PROVIDER_META: Record<string, { signupUrl: string; keyField: string; settingKey: typeof SETTING_KEYS[keyof typeof SETTING_KEYS] }> = {
+  cocktaildb: {
+    signupUrl: "https://www.thecocktaildb.com/api.php",
+    keyField: "cocktaildbApiKey",
+    settingKey: SETTING_KEYS.cocktaildbApiKey,
+  },
+  apininjas: {
+    signupUrl: "https://api-ninjas.com/api/cocktail",
+    keyField: "apiNinjasApiKey",
+    settingKey: SETTING_KEYS.apiNinjasApiKey,
+  },
+};
+
+/** What each mode does, and what choosing it will change. */
+function buildModeOptions(current: string): AuthModeOption[] {
+  return AUTH_MODES.map((value): AuthModeOption => {
+    if (value === "local") {
+      return {
+        value,
+        label: "Local — email and password",
+        summary: "Barback manages its own accounts and passwords.",
+        consequences: [
+          "Turn the sign-in page and password endpoints back on.",
+          "Let the owner add people and set passwords from the People page.",
+          current === "none"
+            ? "Require a sign-in where previously there was none."
+            : "Stop reading identity headers from your proxy.",
+        ],
+        blockedReason: HAS_SESSION_SECRET
+          ? undefined
+          : "BETTER_AUTH_SECRET is not set. Without it, sign-ins would not survive a restart.",
+      };
+    }
+
+    if (value === "proxy") {
+      return {
+        value,
+        label: "Proxy — identity from a reverse proxy",
+        summary:
+          "Authelia, Authentik, Traefik forward-auth and similar. Barback reads the identity from request headers.",
+        consequences: [
+          "Switch off password sign-in entirely; those endpoints return 404.",
+          "Create an account the first time it sees each person.",
+          "Lock everyone out if a proxy is not actually in front of Barback.",
+        ],
+      };
+    }
+
+    return {
+      value,
+      label: "None — no authentication",
+      summary:
+        "Everyone who can reach this instance is the same user. Private networks only.",
+      consequences: [
+        "Let anyone who can reach this instance straight in, with no sign-in.",
+        "Treat every visitor as the owner account, so your existing bar and recipes stay visible.",
+        "Hide the People page, since there is only one account.",
+      ],
+    };
+  });
+}
+
+export default async function SettingsPage() {
+  const user = await requireUser();
+  const owner = await isOwner(user.id);
+  const mode = await getAuthMode();
+  const signupsOpen = await signupsAllowed();
+  const canSignOut = await hasPasswordSession();
+
+  // Does nothing unless the owner switched automatic checking on, and then
+  // at most once a day.
+  if (owner) await maybeAutoCheck();
+  const releaseState = await getReleaseState();
+  const badgeTag = await pendingUpdateTag();
+
+  // A non-owner is sent no provider configuration at all. Rendering the
+  // locked view is not enough on its own: anything passed as a prop ends up
+  // in the payload the browser receives, masked key included.
+  if (!owner) {
+    return (
+      <AppShell user={user}>
+        <PageHeader title="Settings" subtitle="How Barback looks cocktails up." />
+        <PageBody>
+          <SettingsForm
+            providers={[]}
+            preferredProvider=""
+            fallbackEnabled={false}
+            canEdit={false}
+          />
+          <section className="space-y-2 border-t border-bar-800 pt-6">
+            <h2 className="font-display text-xl text-bar-200">Account</h2>
+            <p className="text-sm text-bar-400">{user.email}</p>
+            {canSignOut ? <SignOutButton /> : null}
+          </section>
+        </PageBody>
+      </AppShell>
+    );
+  }
+
+  const [preferred, fallback, counts] = await Promise.all([
+    getSetting(SETTING_KEYS.preferredProvider),
+    getSetting(SETTING_KEYS.fallbackEnabled),
+    cachedCountsByProvider(),
+  ]);
+
+  const authModeOptions = buildModeOptions(mode);
+
+  const providers: ProviderView[] = await Promise.all(
+    PROVIDER_LIST.map(async (provider) => {
+      const meta = PROVIDER_META[provider.id];
+      const key = await getSetting(meta.settingKey);
+      const source = await getSettingSource(meta.settingKey);
+      return {
+        id: provider.id,
+        label: provider.label,
+        description: provider.description,
+        capabilities: provider.capabilities,
+        // Only ever a masked form reaches the browser.
+        maskedKey: maskSecret(key),
+        configured: Boolean(key),
+        source,
+        cachedCount: counts[provider.id] ?? 0,
+        signupUrl: meta.signupUrl,
+        keyField: meta.keyField,
+      };
+    }),
+  );
+
+  return (
+    <AppShell user={user}>
+      <PageHeader title="Settings" subtitle="How Barback looks cocktails up." />
+      <PageBody>
+        <SettingsForm
+          providers={providers}
+          preferredProvider={preferred}
+          fallbackEnabled={fallback === "true"}
+          canEdit={owner}
+        />
+
+        <div className="border-t border-bar-800 pt-6">
+          <AuthModeSettings
+            current={mode}
+            options={authModeOptions}
+            locked={AUTH_MODE_LOCKED}
+            lockedBy={AUTH_MODE_ENV}
+            signupsOpen={signupsOpen}
+          />
+        </div>
+
+        <section className="space-y-2 border-t border-bar-800 pt-6">
+          <h2 className="font-display text-xl text-bar-200">About</h2>
+          <Link
+            href="/settings/releases"
+            className="card flex items-center justify-between gap-3 p-4 transition-colors hover:border-bar-700 hover:bg-bar-850"
+          >
+            <span>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-bar-200">Releases and changelog</span>
+                {badgeTag ? (
+                  <span className="chip border-brass-400/40 text-brass-300">
+                    {badgeTag} available
+                  </span>
+                ) : null}
+              </span>
+              <span className="block text-xs text-bar-400">
+                Running {releaseState.current}. What changed in each version,
+                and whether there is a newer one.
+              </span>
+            </span>
+            <ChevronRightIcon className="size-5 shrink-0 text-bar-400" />
+          </Link>
+
+          <Link
+            href="/settings/licenses"
+            className="card flex items-center justify-between gap-3 p-4 transition-colors hover:border-bar-700 hover:bg-bar-850"
+          >
+            <span>
+              <span className="block text-sm text-bar-200">Open source licenses</span>
+              <span className="block text-xs text-bar-400">
+                Every package this build is made from, with versions and
+                license texts.
+              </span>
+            </span>
+            <ChevronRightIcon className="size-5 shrink-0 text-bar-400" />
+          </Link>
+        </section>
+
+        <section className="space-y-2 border-t border-bar-800 pt-6">
+          <h2 className="font-display text-xl text-bar-200">Account</h2>
+          <p className="text-sm text-bar-400">{user.email} · instance owner</p>
+          {canSignOut ? <SignOutButton /> : null}
+        </section>
+      </PageBody>
+    </AppShell>
+  );
+}

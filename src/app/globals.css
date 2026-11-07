@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/*
+ * The wordmark face. Kept separate from --font-display so it applies only to
+ * the "Barback" logo: it is a display face with a strong personality, and
+ * running every heading in it would be unreadable.
+ *
+ * Retro Gastroll by Arterfak Project, free for unlimited use; see
+ * public/fonts/retro-gastroll-license.txt.
+ */
+@font-face {
+  font-family: "Retro Gastroll";
+  src: url("/fonts/retro-gastroll.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  /* Show the fallback immediately and swap: the logo must never be invisible
+     while a font loads, least of all on the sign-in page. */
+  font-display: swap;
+}
+
+@theme {
+  --color-bar-950: #0b0a0c;
+  --color-bar-900: #141217;
+  --color-bar-850: #1b1820;
+  --color-bar-800: #231f28;
+  --color-bar-700: #322c39;
+  --color-bar-600: #4a4254;
+  --color-bar-400: #8b8295;
+  --color-bar-300: #b3abbb;
+  --color-bar-200: #d8d3dd;
+
+  --color-brass-500: #c9922f;
+  --color-brass-400: #dCa845;
+  --color-brass-300: #e8c173;
+  --color-brass-200: #f2dCa8;
+
+  --color-citrus-400: #7fbf6a;
+  --color-cherry-400: #d4566a;
+
+  --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino,
+    Georgia, serif;
+
+  /* Wordmark only. Falls back to the heading serif if the file is missing. */
+  --font-logo: "Retro Gastroll", ui-serif, "Iowan Old Style", Georgia, serif;
+
+  --radius-card: 1rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-bar-950);
+    color: var(--color-bar-200);
+    /* Respect the iOS home indicator / notch. */
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior-y: none;
+  }
+
+  /* Keep iOS from zooming when focusing an input. */
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1rem);
+  }
+
+  ::selection {
+    background-color: var(--color-brass-500);
+    color: var(--color-bar-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brass-400);
+    outline-offset: 2px;
+  }
+}
+
+/* Registered as real utilities so the variants below can @apply them. */
+@utility btn {
+  display: inline-flex;
+  min-height: calc(var(--spacing) * 11);
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--spacing) * 2);
+  border-radius: var(--radius-xl);
+  padding-inline: calc(var(--spacing) * 4);
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  font-weight: 500;
+  transition-property: color, background-color, border-color;
+  transition-duration: 150ms;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+@utility card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-bar-800);
+  background-color: var(--color-bar-900);
+}
+
+@layer components {
+  .btn-primary {
+    @apply btn bg-brass-400 text-bar-950 hover:bg-brass-300 active:bg-brass-500;
+  }
+
+  .btn-secondary {
+    @apply btn border border-bar-700 bg-bar-850 text-bar-200 hover:bg-bar-800;
+  }
+
+  .btn-ghost {
+    @apply btn text-bar-300 hover:bg-bar-850 hover:text-bar-200;
+  }
+
+  .btn-danger {
+    @apply btn border border-cherry-400/40 text-cherry-400 hover:bg-cherry-400/10;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-bar-700 bg-bar-850 px-3 py-2.5
+      text-bar-200 placeholder:text-bar-400 focus:border-brass-400
+      focus:outline-none;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-bar-300;
+  }
+
+  /* Text that sits directly on the photograph rather than on a card. The
+     shadow is what keeps it readable over the bright bottle shelves. */
+  .on-photo {
+    text-shadow:
+      0 1px 2px rgb(0 0 0 / 0.9),
+      0 2px 12px rgb(0 0 0 / 0.7);
+  }
+
+  /* Release notes come from GitHub as Markdown. Tailwind's reset strips
+     heading and list styling, so the rendered output needs it back. */
+  .changelog {
+    @apply space-y-3 text-sm leading-relaxed text-bar-300;
+  }
+  .changelog h1,
+  .changelog h2 {
+    @apply font-display text-xl text-bar-200;
+  }
+  .changelog h3,
+  .changelog h4 {
+    @apply font-display text-lg text-bar-200;
+  }
+  .changelog ul {
+    @apply list-disc space-y-1 pl-5;
+  }
+  .changelog ol {
+    @apply list-decimal space-y-1 pl-5;
+  }
+  .changelog a {
+    @apply text-brass-300 underline underline-offset-4;
+  }
+  .changelog code {
+    @apply rounded bg-bar-850 px-1 py-0.5 font-mono text-xs text-bar-200;
+  }
+  .changelog pre {
+    @apply overflow-x-auto rounded-xl border border-bar-800 bg-bar-950 p-3;
+  }
+  .changelog pre code {
+    @apply bg-transparent p-0;
+  }
+  .changelog blockquote {
+    @apply border-l-2 border-brass-400/50 pl-3 text-bar-400 italic;
+  }
+  .changelog table {
+    @apply w-full border-collapse text-left;
+  }
+  .changelog th,
+  .changelog td {
+    @apply border-b border-bar-800 px-2 py-1.5;
+  }
+  .changelog img {
+    @apply max-w-full rounded-lg;
+  }
+  .changelog hr {
+    @apply border-bar-800;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-bar-700
+      bg-bar-850 px-2.5 py-1 text-xs text-bar-300;
+  }
+}

@@ -1,0 +1,300 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { clearApiKey, saveProviderSettings } from "@/actions/settings";
+import { clearCocktailCache, testProvider } from "@/actions/discover";
+import { CheckIcon, SparkIcon, TrashIcon, XIcon } from "@/components/icons";
+import type { ActionResult } from "@/actions/inventory";
+
+export interface ProviderView {
+  id: string;
+  label: string;
+  description: string;
+  capabilities: {
+    images: boolean;
+    stableIds: boolean;
+    multiIngredientFilter: boolean;
+    resultLimit: number | null;
+  };
+  /** Masked form of the stored key, empty when none. */
+  maskedKey: string;
+  configured: boolean;
+  source: "database" | "environment" | "default";
+  cachedCount: number;
+  signupUrl: string;
+  keyField: string;
+}
+
+const SOURCE_LABEL: Record<ProviderView["source"], string> = {
+  database: "set here",
+  environment: "from the environment",
+  default: "using the built-in default",
+};
+
+export function SettingsForm({
+  providers,
+  preferredProvider,
+  fallbackEnabled,
+  canEdit,
+}: {
+  providers: ProviderView[];
+  preferredProvider: string;
+  fallbackEnabled: boolean;
+  canEdit: boolean;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const [preferred, setPreferred] = useState(preferredProvider);
+  const [fallback, setFallback] = useState(fallbackEnabled);
+  const [tests, setTests] = useState<Record<string, ActionResult | null>>({});
+  const [testing, setTesting] = useState<string | null>(null);
+
+  if (!canEdit) {
+    return (
+      <div className="card p-5">
+        <h2 className="font-display text-xl text-bar-200">Settings are locked</h2>
+        <p className="mt-2 text-sm text-bar-400">
+          Only the instance owner — the first account created here — can change
+          API keys and provider settings.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <form
+        action={(formData) => {
+          formData.set("preferredProvider", preferred);
+          if (fallback) formData.set("fallbackEnabled", "on");
+          else formData.delete("fallbackEnabled");
+
+          startTransition(async () => {
+            const res = await saveProviderSettings(formData);
+            setResult(res);
+            if (res.ok) router.refresh();
+          });
+        }}
+        className="space-y-8"
+      >
+        {/* Which provider to use */}
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-display text-xl text-bar-200">Cocktail data</h2>
+            <p className="mt-1 text-sm text-bar-400">
+              Which service Barback asks when you press a lookup button.
+              Nothing is requested while you browse.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {providers.map((provider) => (
+              <label
+                key={provider.id}
+                className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition-colors ${
+                  preferred === provider.id
+                    ? "border-brass-400 bg-brass-400/10"
+                    : "border-bar-800 bg-bar-900 hover:bg-bar-850"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="preferredProviderRadio"
+                  value={provider.id}
+                  checked={preferred === provider.id}
+                  onChange={() => setPreferred(provider.id)}
+                  className="mt-1 size-4 shrink-0 accent-brass-400"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-bar-200">{provider.label}</span>
+                    {provider.configured ? (
+                      <span className="chip border-citrus-400/40 text-citrus-400">
+                        <CheckIcon className="size-3" />
+                        key {SOURCE_LABEL[provider.source]}
+                      </span>
+                    ) : (
+                      <span className="chip border-cherry-400/40 text-cherry-400">
+                        <XIcon className="size-3" />
+                        no key
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-1 block text-sm text-bar-400">
+                    {provider.description}
+                  </span>
+                  <span className="mt-2 flex flex-wrap gap-1.5">
+                    <Capability on={provider.capabilities.images}>photos</Capability>
+                    <Capability on={provider.capabilities.stableIds}>
+                      stable links
+                    </Capability>
+                    <Capability on={provider.capabilities.multiIngredientFilter}>
+                      multi-ingredient search
+                    </Capability>
+                    {provider.capabilities.resultLimit ? (
+                      <span className="chip">
+                        max {provider.capabilities.resultLimit} per search
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <label className="flex items-start gap-2 text-sm text-bar-300">
+            <input
+              type="checkbox"
+              checked={fallback}
+              onChange={(e) => setFallback(e.target.checked)}
+              className="mt-0.5 size-4 accent-brass-400"
+            />
+            <span>
+              Fall back to the other provider when the first one fails
+              <span className="mt-0.5 block text-xs text-bar-400">
+                Off by default. The two services return quite different data, so
+                a silent switch can change your results for reasons the page
+                does not show.
+              </span>
+            </span>
+          </label>
+        </section>
+
+        {/* Keys */}
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-display text-xl text-bar-200">API keys</h2>
+            <p className="mt-1 text-sm text-bar-400">
+              Stored in your own database. Saved values take precedence over
+              environment variables, so you can change one without redeploying.
+            </p>
+          </div>
+
+          {providers.map((provider) => (
+            <div key={provider.id} className="card space-y-3 p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <label className="label mb-0" htmlFor={provider.keyField}>
+                  {provider.label} key
+                </label>
+                <a
+                  href={provider.signupUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-xs text-brass-300 underline-offset-4 hover:underline"
+                >
+                  Get a key
+                </a>
+              </div>
+
+              <input
+                id={provider.keyField}
+                name={provider.keyField}
+                type="password"
+                autoComplete="off"
+                className="field font-mono"
+                placeholder={
+                  provider.maskedKey
+                    ? `Currently ${provider.maskedKey} — type to replace`
+                    : "Paste your key"
+                }
+              />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={testing === provider.id || !provider.configured}
+                  onClick={() => {
+                    setTesting(provider.id);
+                    startTransition(async () => {
+                      const res = await testProvider(provider.id);
+                      setTests((current) => ({ ...current, [provider.id]: res }));
+                      setTesting(null);
+                    });
+                  }}
+                  className="btn-secondary"
+                >
+                  <SparkIcon className="size-4" />
+                  {testing === provider.id ? "Testing…" : "Test connection"}
+                </button>
+
+                {provider.source === "database" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!confirm(`Remove the stored ${provider.label} key?`)) return;
+                      startTransition(async () => {
+                        await clearApiKey(provider.id);
+                        router.refresh();
+                      });
+                    }}
+                    className="btn-ghost text-sm"
+                  >
+                    <TrashIcon className="size-4" />
+                    Remove key
+                  </button>
+                ) : null}
+
+                {provider.cachedCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        !confirm(
+                          `Forget ${provider.cachedCount} cocktails cached from ${provider.label}?`,
+                        )
+                      )
+                        return;
+                      startTransition(async () => {
+                        await clearCocktailCache(provider.id);
+                        router.refresh();
+                      });
+                    }}
+                    className="btn-ghost text-sm"
+                  >
+                    Clear {provider.cachedCount} cached
+                  </button>
+                ) : null}
+              </div>
+
+              {tests[provider.id] ? (
+                <p
+                  role="status"
+                  className={`text-sm ${
+                    tests[provider.id]?.ok ? "text-citrus-400" : "text-cherry-400"
+                  }`}
+                >
+                  {tests[provider.id]?.error}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </section>
+
+        {result ? (
+          <p
+            role="status"
+            className={`text-sm ${result.ok ? "text-citrus-400" : "text-cherry-400"}`}
+          >
+            {result.error}
+          </p>
+        ) : null}
+
+        <button type="submit" disabled={pending} className="btn-primary w-full">
+          {pending ? "Saving…" : "Save settings"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function Capability({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`chip ${on ? "border-bar-700 text-bar-300" : "border-bar-800 text-bar-600 line-through"}`}
+    >
+      {children}
+    </span>
+  );
+}

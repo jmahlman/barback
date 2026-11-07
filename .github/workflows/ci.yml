@@ -1,0 +1,35 @@
+# Runs on every push and pull request. Keeps the release workflow honest:
+# a tag should only ever be cut from something that already builds.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        env:
+          # The build only needs these to exist, not to be real.
+          BETTER_AUTH_SECRET: ci-placeholder-secret-not-used-at-runtime
+          DATABASE_URL: file:./data/ci.db
+        run: npm run build
+
+      - name: Build the Docker image
+        run: docker build -t barback:ci .

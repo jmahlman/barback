@@ -1,0 +1,55 @@
+services:
+  barback:
+    # The published image, built and pushed by the release workflow.
+    # Pin a version (…:0.2.0) if you would rather not move automatically.
+    image: ghcr.io/jmahlman/barback:latest
+    # Building from a local checkout instead? Comment out "image" above and
+    # uncomment this:
+    # build: .
+    container_name: barback
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # How people sign in: local | proxy | none.
+      # Left empty on purpose so the Settings page can manage it. Setting it
+      # here pins the mode and makes the dropdown read-only — which is also
+      # how you get back in if a mode change ever locks you out.
+      AUTH_MODE: "${AUTH_MODE:-}"
+
+      # REQUIRED in local mode. Generate with: openssl rand -base64 32
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}"
+
+      # Public URL of this instance, no trailing slash.
+      BETTER_AUTH_URL: "${BETTER_AUTH_URL:-http://localhost:3000}"
+
+      # local mode: set to "false" once you have created your account.
+      ALLOW_SIGNUPS: "${ALLOW_SIGNUPS:-true}"
+
+      # proxy mode. The shared secret is strongly recommended: without it,
+      # anything that can reach Barback directly can impersonate any user.
+      AUTH_PROXY_SHARED_SECRET: "${AUTH_PROXY_SHARED_SECRET:-}"
+      AUTH_PROXY_USER_HEADER: "${AUTH_PROXY_USER_HEADER:-Remote-User}"
+      AUTH_PROXY_EMAIL_HEADER: "${AUTH_PROXY_EMAIL_HEADER:-Remote-Email}"
+      AUTH_PROXY_NAME_HEADER: "${AUTH_PROXY_NAME_HEADER:-Remote-Name}"
+      AUTH_PROXY_GROUPS_HEADER: "${AUTH_PROXY_GROUPS_HEADER:-Remote-Groups}"
+      AUTH_PROXY_ADMIN_GROUP: "${AUTH_PROXY_ADMIN_GROUP:-}"
+
+      # none mode: the single account everything belongs to.
+      SINGLE_USER_EMAIL: "${SINGLE_USER_EMAIL:-you@barback.local}"
+      SINGLE_USER_NAME: "${SINGLE_USER_NAME:-You}"
+
+      # Cocktail data. These seed the Settings page; anything saved there
+      # takes precedence, so you can change a key without redeploying.
+      # Lookups only run when you press a button, never automatically.
+      COCKTAIL_PROVIDER: "${COCKTAIL_PROVIDER:-cocktaildb}"
+      COCKTAIL_PROVIDER_FALLBACK: "${COCKTAIL_PROVIDER_FALLBACK:-false}"
+      COCKTAILDB_API_KEY: "${COCKTAILDB_API_KEY:-1}"
+      API_NINJAS_API_KEY: "${API_NINJAS_API_KEY:-}"
+
+    volumes:
+      # The SQLite database and uploaded photos. Back this up.
+      - barback-data:/data
+
+volumes:
+  barback-data:

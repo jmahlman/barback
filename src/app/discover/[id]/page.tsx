@@ -1,0 +1,182 @@
+import Image from "next/image";
+import type { Metadata } from "next";
+import { AppShell, PageBody, PageHeader } from "@/components/app-shell";
+import { MakeableBadge } from "@/components/recipe-card";
+import { ImportButton } from "@/components/import-button";
+import { AddMissingButton } from "@/components/recipe-detail-actions";
+import { EmptyState } from "@/components/empty-state";
+import { FetchDrinkButton } from "@/components/fetch-drink-button";
+import { CheckIcon, GlassIcon, SparkIcon, XIcon } from "@/components/icons";
+import { drinkImage } from "@/lib/providers/images";
+import { getCachedDrink } from "@/lib/providers/cache";
+import { getProvider, isProviderId } from "@/lib/providers/registry";
+import { parseDrinkKey } from "@/lib/providers/types";
+import { evaluateRecipe } from "@/lib/matching";
+import { loadInventoryIndex } from "@/lib/recipe-queries";
+import { db } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  // Cache-only: generating a title must never trigger an API call.
+  const drink = await getCachedDrink(id);
+  return { title: drink?.name ?? "Cocktail" };
+}
+
+export default async function DiscoverDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const user = await requireUser();
+  const { id } = await params;
+
+  const parsed = parseDrinkKey(id);
+  const provider = parsed ? getProvider(parsed.provider) : null;
+  const providerLabel = provider?.label ?? "the provider";
+  const attribution = provider?.attribution ?? "";
+
+  const [drink, inventory, saved] = await Promise.all([
+    getCachedDrink(id),
+    loadInventoryIndex(user.id),
+    db.recipe.findFirst({
+      where: { userId: user.id, externalId: id },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!drink) {
+    return (
+      <AppShell user={user}>
+        <PageHeader title="Cocktail" />
+        <PageBody>
+          <EmptyState
+            icon={<SparkIcon className="size-12" />}
+            title="Not saved locally"
+            body={`Barback has not saved this drink yet. Nothing is requested from ${providerLabel} until you ask for it.`}
+            action={
+              provider?.capabilities.stableIds ? (
+                <FetchDrinkButton drinkKey={id} />
+              ) : null
+            }
+          />
+          <p className="text-xs text-bar-400">{attribution}</p>
+        </PageBody>
+      </AppShell>
+    );
+  }
+
+  const evaluation = evaluateRecipe(
+    drink.ingredients.map((i) => ({ name: i.name, slug: i.slug, measure: i.measure })),
+    inventory,
+  );
+
+  const image = drinkImage(drink.thumbUrl, "large");
+  const missingNames = evaluation.missing.map((m) => m.name);
+
+  return (
+    <AppShell user={user}>
+      <PageHeader
+        title={drink.name}
+        subtitle={[drink.category, drink.alcoholic].filter(Boolean).join(" · ") || undefined}
+      />
+      <PageBody>
+        {image ? (
+          <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-card)] border border-bar-800 bg-bar-900">
+            <Image
+              src={image}
+              alt={drink.name}
+              fill
+              sizes="(min-width: 768px) 640px, 100vw"
+              className="object-cover"
+              priority
+            />
+          </div>
+        ) : null}
+
+        <MakeableBadge evaluation={evaluation} />
+
+        <ImportButton drinkKey={drink.key} imported={Boolean(saved)} />
+
+        {drink.glass ? (
+          <div className="flex flex-wrap gap-2">
+            <span className="chip">
+              <GlassIcon className="size-3.5" />
+              {drink.glass}
+            </span>
+          </div>
+        ) : null}
+
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-bar-200">Ingredients</h2>
+          <ul className="card divide-y divide-bar-800 overflow-hidden">
+            {evaluation.ingredients.map((ingredient, index) => {
+              const have = Boolean(ingredient.match) || ingredient.assumed;
+              return (
+                <li key={`${ingredient.slug}-${index}`} className="flex items-center gap-3 p-3">
+                  <span
+                    aria-hidden
+                    className={`flex size-7 shrink-0 items-center justify-center rounded-md ${
+                      have ? "bg-citrus-400/15 text-citrus-400" : "bg-cherry-400/15 text-cherry-400"
+                    }`}
+                  >
+                    {have ? <CheckIcon className="size-4" /> : <XIcon className="size-4" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-bar-200">
+                      {ingredient.measure ? (
+                        <span className="font-medium text-brass-300">{ingredient.measure} </span>
+                      ) : null}
+                      {ingredient.name}
+                    </p>
+                    {ingredient.match && ingredient.match.kind !== "exact" ? (
+                      <p className="text-xs text-bar-400">
+                        {ingredient.match.kind === "substitute" ? "Using" : "Covered by"}{" "}
+                        {inventory.names.get(ingredient.match.inventorySlug) ??
+                          ingredient.match.inventorySlug}
+                      </p>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {missingNames.length > 0 ? <AddMissingButton names={missingNames} /> : null}
+        </section>
+
+        {drink.instructions ? (
+          <section className="space-y-2">
+            <h2 className="font-display text-xl text-bar-200">Method</h2>
+            <div className="card p-4">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-bar-200">
+                {drink.instructions}
+              </p>
+            </div>
+          </section>
+        ) : null}
+
+        <p className="border-t border-bar-800 pt-4 text-xs text-bar-400">
+          {attribution}
+          {drink.sourceUrl ? (
+            <>
+              {" · "}
+              <a
+                href={drink.sourceUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-brass-300 underline-offset-4 hover:underline"
+              >
+                View on {providerLabel}
+              </a>
+            </>
+          ) : null}
+        </p>
+      </PageBody>
+    </AppShell>
+  );
+}

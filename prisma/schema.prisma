@@ -1,0 +1,282 @@
+// Barback data model.
+// SQLite keeps the whole deployment to a single container + one volume.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Better Auth managed tables)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  /// Sign-in handle, lowercase. Reverse proxies identify people this way:
+  /// Authelia's Remote-User is "john", not an email address. Matching on it
+  /// first is what stops the same person becoming two accounts when the
+  /// instance moves between local and proxy sign-in.
+  username      String?  @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions    Session[]
+  accounts    Account[]
+  items       InventoryItem[]
+  recipes     Recipe[]
+  reviewNotes ReviewNote[]
+
+  // --- Better Auth admin plugin -------------------------------------------
+  /// "admin" or "user". The first account created becomes the admin.
+  role       String?   @default("user")
+  /// A suspended account is refused in every auth mode, including when a
+  /// reverse proxy still vouches for them.
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Set by the admin plugin when an admin is impersonating this user.
+  impersonatedBy String?
+
+  @@map("session")
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+  @@index([identifier])
+}
+
+// ---------------------------------------------------------------------------
+// Inventory
+// ---------------------------------------------------------------------------
+
+/// What a bottle/carton/bag on the shelf is. Kept as a string rather than a
+/// Prisma enum so SQLite migrations stay painless and users can be surprised
+/// by their own liquor cabinet.
+
+model InventoryItem {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Display name, e.g. "Beefeater London Dry Gin".
+  name     String
+  /// Normalised match key, e.g. "gin". Drives recipe matching.
+  slug     String
+  /// One of the CATEGORIES values in src/lib/categories.ts.
+  category String  @default("other")
+  brand    String?
+
+  /// Free-form, e.g. "750ml", "about half left".
+  quantity String?
+  abv      Float?
+
+  /// Reserved for barcode scanning. Unused today, indexed for later lookups.
+  upc String?
+
+  notes   String?
+  inStock Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId, category])
+  @@index([upc])
+  @@map("inventory_item")
+}
+
+// ---------------------------------------------------------------------------
+// Recipe book
+// ---------------------------------------------------------------------------
+
+model Recipe {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  slug         String
+  description  String?
+  instructions String
+  notes        String?
+
+  glass   String?
+  /// shaken | stirred | built | blended | thrown | other
+  method  String?
+  garnish String?
+
+  /// Relative path under UPLOAD_DIR, served via /api/uploads/<path>.
+  imagePath String?
+
+  /// Provenance when imported from a cocktail provider.
+  sourceName     String?
+  sourceUrl      String?
+  /// Provider id, e.g. "cocktaildb" or "apininjas".
+  sourceProvider String?
+  /// Namespaced key, "<provider>~<id>", unique across providers.
+  externalId     String?
+
+  isFavorite Boolean @default(false)
+  /// Overall 1-5 rating. Per-session impressions live in ReviewNote.
+  rating     Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+  reviewNotes ReviewNote[]
+
+  @@unique([userId, slug])
+  @@index([userId, isFavorite])
+  @@index([userId, externalId])
+  @@map("recipe")
+}
+
+model RecipeIngredient {
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  /// As written on the card, e.g. "Fresh lime juice".
+  name     String
+  /// Normalised match key, e.g. "lime juice".
+  slug     String
+  amount   String?
+  unit     String?
+  /// Optional ingredients never block a drink from being "makeable".
+  optional Boolean @default(false)
+  /// Garnishes are matched but reported separately.
+  garnish  Boolean @default(false)
+  note     String?
+  position Int     @default(0)
+
+  @@index([recipeId, position])
+  @@index([slug])
+  @@map("recipe_ingredient")
+}
+
+/// A tasting note from one specific time you made the drink.
+
+model ReviewNote {
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rating    Int?
+  body      String
+  madeOn    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([recipeId, madeOn])
+  @@map("review_note")
+}
+
+// ---------------------------------------------------------------------------
+// TheCocktailDB response cache
+// Keeps discovery fast and stays polite to the upstream free API.
+// ---------------------------------------------------------------------------
+
+model CachedDrink {
+  /// Namespaced key: "<provider>~<externalId>".
+  id String @id
+
+  /// Which provider this came from.
+  provider   String
+  /// The provider's own identifier for the drink.
+  externalId String
+
+  name         String
+  slug         String
+  thumbUrl     String?
+  category     String?
+  alcoholic    String?
+  glass        String?
+  instructions String?
+  /// JSON array of { name, slug, measure }.
+  ingredients  String
+  fetchedAt    DateTime @default(now())
+
+  @@index([slug])
+  @@index([provider])
+  @@map("cached_drink")
+}
+
+/// Cached result of a provider query, e.g. key "cocktaildb~i~gin".
+
+model CachedFilter {
+  key       String   @id
+  /// JSON array of idDrink strings.
+  drinkIds  String
+  fetchedAt DateTime @default(now())
+
+  @@map("cached_filter")
+}
+
+// ---------------------------------------------------------------------------
+// Instance settings
+// ---------------------------------------------------------------------------
+
+/// Key/value settings editable from the Settings page. Values set here take
+/// precedence over environment variables, so a self-hoster can configure an
+/// API key without redeploying.
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_setting")
+}

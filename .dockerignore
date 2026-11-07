@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.gitignore
+data
+*.db
+.env
+.env*.local
+README.md
+docs
+npm-debug.log*
+src/generated
