@@ -178,7 +178,7 @@ async function FromYourShelf({
 
   return (
     <div className="space-y-8">
-      <section className="space-y-3">
+      <section id="makeable" className="scroll-mt-6 space-y-3">
         <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-bar-400">
           <SparkIcon className="size-4" />
           You can make {result.makeable.length} of {result.considered} saved

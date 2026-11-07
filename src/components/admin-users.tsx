@@ -11,6 +11,7 @@ import {
   updateUserAccount,
 } from "@/actions/admin";
 import { Sheet } from "@/components/sheet";
+import { ConfirmButton } from "@/components/confirm-button";
 import {
   BanIcon,
   CheckIcon,
@@ -397,24 +398,19 @@ function EditPanel({
             {user.banned ? "Reinstate account" : "Suspend account"}
           </button>
 
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              if (
-                !confirm(
-                  `Delete ${user.email}? Their ${user.inventoryCount} ingredients and ${user.recipeCount} recipes go too. This cannot be undone.`,
-                )
-              )
-                return;
-              onClose();
-              run(() => deleteUserAccount(user.id));
-            }}
+          <ConfirmButton
+            label="Delete account and all their data"
+            confirmLabel="Delete the account"
+            question={`Delete ${user.email}?`}
+            detail={`Their ${user.inventoryCount} ingredients and ${user.recipeCount} recipes go too. This cannot be undone.`}
+            icon={<TrashIcon className="size-5" />}
             className="btn-danger w-full"
-          >
-            <TrashIcon className="size-5" />
-            Delete account and all their data
-          </button>
+            busyLabel="Deleting…"
+            onConfirm={async () => {
+              onClose();
+              await run(() => deleteUserAccount(user.id));
+            }}
+          />
         </div>
       )}
     </div>

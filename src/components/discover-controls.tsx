@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { clearCocktailCache, scanShelf, searchUpstream } from "@/actions/discover";
 import { SearchIcon, SparkIcon } from "@/components/icons";
+import { ConfirmButton } from "@/components/confirm-button";
 
 /**
  * The only two controls that reach TheCocktailDB. Both require a click, so
@@ -20,6 +21,7 @@ export function ScanButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [makeable, setMakeable] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -33,9 +35,8 @@ export function ScanButton({
             setMessage(null);
             const result = await scanShelf();
             if (result.ok) {
-              setMessage(
-                `Checked ${result.found ?? 0} cocktails · ${result.makeable ?? 0} you can make.`,
-              );
+              setMessage(`Checked ${result.found ?? 0} cocktails.`);
+              setMakeable(result.makeable ?? 0);
               router.refresh();
             } else {
               setError(result.error ?? "Could not complete the lookup.");
@@ -48,7 +49,21 @@ export function ScanButton({
         {pending ? "Asking TheCocktailDB…" : label}
       </button>
 
-      {message ? <p className="text-xs text-citrus-400">{message}</p> : null}
+      {message ? (
+        <p className="text-xs text-citrus-400">
+          {message}{" "}
+          {makeable && makeable > 0 ? (
+            <a
+              href="#makeable"
+              className="font-medium underline underline-offset-4 hover:text-citrus-400/80"
+            >
+              See the {makeable} you can make →
+            </a>
+          ) : (
+            "Nothing on your shelf is fully stocked yet."
+          )}
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="text-xs text-cherry-400">
           {error}
@@ -111,24 +126,21 @@ export function DiscoverSearchForm({ defaultQuery = "" }: { defaultQuery?: strin
 
 export function ClearCacheButton({ count }: { count: number }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
 
   if (count === 0) return null;
 
   return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() => {
-        if (!confirm(`Forget all ${count} cached cocktails? You can look them up again.`)) return;
-        startTransition(async () => {
-          await clearCocktailCache();
-          router.refresh();
-        });
-      }}
+    <ConfirmButton
+      label={`Clear ${count} cached cocktails`}
+      confirmLabel="Clear them"
+      question={`Forget all ${count} cached cocktails?`}
+      detail="Your own recipes and inventory are untouched. You can look them up again whenever you like."
       className="text-xs text-bar-400 underline-offset-4 hover:text-bar-200 hover:underline"
-    >
-      {pending ? "Clearing…" : `Clear ${count} cached cocktails`}
-    </button>
+      busyLabel="Clearing…"
+      onConfirm={async () => {
+        await clearCocktailCache();
+        router.refresh();
+      }}
+    />
   );
 }

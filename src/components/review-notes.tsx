@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { addReviewNote, deleteReviewNote } from "@/actions/recipes";
 import { RatingInput, RatingStars } from "@/components/rating-input";
 import { PlusIcon, TrashIcon } from "@/components/icons";
+import { ConfirmButton } from "@/components/confirm-button";
 
 export interface ReviewNoteView {
   id: string;
@@ -136,20 +137,17 @@ export function ReviewNotes({
                 </time>
                 <RatingStars value={note.rating} className="size-3.5" />
               </div>
-              <button
-                type="button"
-                aria-label="Delete note"
-                onClick={() => {
-                  if (!confirm("Delete this note?")) return;
-                  startTransition(async () => {
-                    await deleteReviewNote(note.id);
-                    router.refresh();
-                  });
-                }}
+              <ConfirmButton
+                label={<TrashIcon className="size-4" />}
+                confirmLabel="Delete note"
+                question="Delete this tasting note?"
                 className="btn-ghost -mr-2 -mt-1 size-9 shrink-0 p-0 text-bar-400"
-              >
-                <TrashIcon className="size-4" />
-              </button>
+                busyLabel="…"
+                onConfirm={async () => {
+                  await deleteReviewNote(note.id);
+                  router.refresh();
+                }}
+              />
             </div>
             <p className="mt-1.5 whitespace-pre-wrap text-sm text-bar-200">{note.body}</p>
           </li>

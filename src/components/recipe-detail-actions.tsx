@@ -6,6 +6,7 @@ import { deleteRecipe, setRating, toggleFavorite } from "@/actions/recipes";
 import { quickAddIngredients } from "@/actions/inventory";
 import { RatingInput } from "@/components/rating-input";
 import { CartIcon, StarIcon, TrashIcon } from "@/components/icons";
+import { ConfirmButton } from "@/components/confirm-button";
 
 export function FavoriteButton({
   id,
@@ -62,29 +63,27 @@ export function RatingControl({ id, rating }: { id: string; rating: number | nul
 
 export function DeleteRecipeButton({ id, name }: { id: string; name: string }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
 
   return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() => {
-        if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-        startTransition(async () => {
-          const result = await deleteRecipe(id);
-          if (result.ok) {
-            router.push("/recipes");
-            router.refresh();
-          }
-        });
-      }}
+    <ConfirmButton
+      label="Delete recipe"
+      confirmLabel="Delete it"
+      question={`Delete "${name}"?`}
+      detail="This removes the recipe, its photo and its tasting notes. It cannot be undone."
+      icon={<TrashIcon className="size-5" />}
       className="btn-danger w-full"
-    >
-      <TrashIcon className="size-5" />
-      {pending ? "Deleting…" : "Delete recipe"}
-    </button>
+      busyLabel="Deleting…"
+      onConfirm={async () => {
+        const result = await deleteRecipe(id);
+        if (result.ok) {
+          router.push("/recipes");
+          router.refresh();
+        }
+      }}
+    />
   );
 }
+
 
 /** Adds everything you are missing straight into the inventory. */
 export function AddMissingButton({ names }: { names: string[] }) {

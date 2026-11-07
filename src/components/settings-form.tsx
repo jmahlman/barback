@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { clearApiKey, saveProviderSettings } from "@/actions/settings";
 import { clearCocktailCache, testProvider } from "@/actions/discover";
 import { CheckIcon, SparkIcon, TrashIcon, XIcon } from "@/components/icons";
+import { ConfirmButton } from "@/components/confirm-button";
 import type { ActionResult } from "@/actions/inventory";
 
 export interface ProviderView {
@@ -220,41 +221,34 @@ export function SettingsForm({
                 </button>
 
                 {provider.source === "database" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!confirm(`Remove the stored ${provider.label} key?`)) return;
-                      startTransition(async () => {
-                        await clearApiKey(provider.id);
-                        router.refresh();
-                      });
-                    }}
+                  <ConfirmButton
+                    label="Remove key"
+                    confirmLabel="Remove it"
+                    question={`Remove the stored ${provider.label} key?`}
+                    detail="If the same key is set in your environment, that one takes over again."
+                    icon={<TrashIcon className="size-4" />}
                     className="btn-ghost text-sm"
-                  >
-                    <TrashIcon className="size-4" />
-                    Remove key
-                  </button>
+                    busyLabel="Removing…"
+                    onConfirm={async () => {
+                      await clearApiKey(provider.id);
+                      router.refresh();
+                    }}
+                  />
                 ) : null}
 
                 {provider.cachedCount > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        !confirm(
-                          `Forget ${provider.cachedCount} cocktails cached from ${provider.label}?`,
-                        )
-                      )
-                        return;
-                      startTransition(async () => {
-                        await clearCocktailCache(provider.id);
-                        router.refresh();
-                      });
-                    }}
+                  <ConfirmButton
+                    label={`Clear ${provider.cachedCount} cached`}
+                    confirmLabel="Clear them"
+                    question={`Forget ${provider.cachedCount} cocktails cached from ${provider.label}?`}
+                    detail="Your own recipes are untouched."
                     className="btn-ghost text-sm"
-                  >
-                    Clear {provider.cachedCount} cached
-                  </button>
+                    busyLabel="Clearing…"
+                    onConfirm={async () => {
+                      await clearCocktailCache(provider.id);
+                      router.refresh();
+                    }}
+                  />
                 ) : null}
               </div>
 

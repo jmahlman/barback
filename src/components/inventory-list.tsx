@@ -12,6 +12,7 @@ import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { InventoryForm } from "@/components/inventory-form";
 import { Sheet } from "@/components/sheet";
 import { EmptyState } from "@/components/empty-state";
+import { ConfirmButton } from "@/components/confirm-button";
 import {
   BottleIcon,
   CheckIcon,
@@ -229,23 +230,21 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
               onDone={() => setEditing(null)}
             />
             <div className="border-t border-bar-800 pt-4">
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  if (!confirm(`Remove "${editing.name}" from your inventory?`)) return;
+              <ConfirmButton
+                label="Remove from inventory"
+                confirmLabel="Remove it"
+                question={`Remove "${editing.name}" from your inventory?`}
+                detail="Recipes that use it will start showing it as missing."
+                icon={<TrashIcon className="size-5" />}
+                className="btn-danger w-full"
+                busyLabel="Removing…"
+                onConfirm={async () => {
                   const id = editing.id;
                   setEditing(null);
-                  startTransition(async () => {
-                    await deleteInventoryItem(id);
-                    router.refresh();
-                  });
+                  await deleteInventoryItem(id);
+                  router.refresh();
                 }}
-                className="btn-danger w-full"
-              >
-                <TrashIcon className="size-5" />
-                Remove from inventory
-              </button>
+              />
             </div>
           </div>
         ) : null}
