@@ -3,16 +3,21 @@
 #   npm version minor          # bumps package.json and makes a v* tag
 #   git push --follow-tags
 #
-# That tag is the whole trigger. This workflow then builds the image for
-# amd64 and arm64, publishes it to GHCR, and opens a GitHub Release whose
-# notes become the changelog shown inside the app under Settings → Releases.
+# That tag is the whole trigger. Each architecture is built on a runner of
+# its own architecture, then the two are stitched into one multi-arch image
+# and a GitHub Release is published. Those release notes are what the app
+# shows under Settings → Releases.
+#
+# Native runners rather than QEMU on purpose: emulating arm64 truncates the
+# pipe Prisma reads its schema back over, and `prisma generate` dies with
+# "Unable to parse JSON ... [Context: getDmmf]". Native runners are also
+# several times faster.
 name: Release
 
 on:
   push:
     tags:
       - "v*"
-  # Allows a re-run from the Actions tab without moving the tag.
   workflow_dispatch:
     inputs:
       tag:
@@ -23,15 +28,82 @@ permissions:
   contents: write # create the release
   packages: write # push to GHCR
 
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
 jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Check the tag matches package.json
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$PKG" != "${TAG#v}" ]; then
+            echo "::error::Tag $TAG does not match package.json version $PKG."
+            echo "Run 'npm version' rather than tagging by hand." >&2
+            exit 1
+          fi
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pushed by digest only; the merge job below applies the real tags.
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+      - name: Record the digest
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${{ steps.build.outputs.digest }}"
+
+      - name: Hand the digest to the merge job
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
   release:
+    name: Publish
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Check out the tagged commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
-          # Needed so the changelog can look back at previous tags.
+          # The changelog looks back at the previous tag.
           fetch-depth: 0
 
       - name: Work out the version
@@ -41,19 +113,12 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Check the tag matches package.json
-        run: |
-          PKG=$(node -p "require('./package.json').version")
-          TAG="${{ steps.version.outputs.version }}"
-          if [ "$PKG" != "$TAG" ]; then
-            echo "::error::Tag v$TAG does not match package.json version $PKG."
-            echo "Run 'npm version' rather than tagging by hand." >&2
-            exit 1
-          fi
-          echo "package.json and the tag agree on $PKG."
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Collect the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
@@ -69,27 +134,24 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # Lowercase, because GHCR rejects capitals in image names.
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ env.IMAGE }}
           tags: |
             type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }}
             type=raw,value=latest,enable=${{ !contains(steps.version.outputs.tag, '-') }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Stitch the architectures into one image
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< '${{ steps.meta.outputs.json }}') \
+            $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+
+      - name: Check the published image
+        run: docker buildx imagetools inspect ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
 
       - name: Assemble the release notes
-        id: notes
         run: |
           TAG="${{ steps.version.outputs.tag }}"
           PREVIOUS=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
@@ -104,18 +166,19 @@ jobs:
             else
               echo "### First release"
               echo
-              echo "Barback $TAG."
+              echo "Barback $TAG. See the README for what it does and how to run it."
             fi
 
             echo
             echo "### Running it"
             echo
             echo '```bash'
-            echo "docker pull ghcr.io/${{ github.repository }}:${TAG#v}"
+            echo "docker pull ${{ env.IMAGE }}:${{ steps.version.outputs.version }}"
             echo '```'
+            echo
+            echo "Built for \`linux/amd64\` and \`linux/arm64\`."
           } > release-notes.md
 
-          echo "Generated notes:"
           cat release-notes.md
 
       - name: Publish the release
