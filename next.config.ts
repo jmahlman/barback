@@ -11,10 +11,11 @@ const nextConfig: NextConfig = {
       "./node_modules/better-sqlite3/build/Release/*.node",
     ],
   },
-  // The floating dev-tools badge in the corner. It only ever renders in
-  // development, never in a build, but it sits on top of the UI while
-  // working on the layout.
-  devIndicators: false,
+  // Not setting `devIndicators: false` on purpose. It hides the floating
+  // dev-tools badge, but on Next 16.4.5 it also puts the dev server into a
+  // full-page-reload loop. The badge only ever renders under `next dev` —
+  // it is absent from a production build and from the Docker image — so
+  // living with it costs nothing that matters.
 
   images: {
     remotePatterns: [
