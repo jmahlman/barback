@@ -15,6 +15,42 @@ you can make tonight. Self-hosted, one container, no account anywhere else.
 
 ---
 
+## Contents
+
+- [What it does](#what-it-does)
+- [API lookups only happen when you ask](#api-lookups-only-happen-when-you-ask)
+- [Choosing a provider](#choosing-a-provider)
+- [Settings](#settings)
+- [Running it](#running-it)
+  - [Behind a reverse proxy](#behind-a-reverse-proxy)
+  - [Your data](#your-data)
+- [Configuration](#configuration)
+- [Authentication](#authentication)
+  - [local (default)](#local-default)
+  - [proxy](#proxy)
+  - [none](#none)
+  - [Account creation](#account-creation)
+  - [Switching mode](#switching-mode)
+  - [Break-glass administrator access](#break-glass-administrator-access)
+  - [Which to choose](#which-to-choose)
+- [Usernames](#usernames)
+- [Releases and updates](#releases-and-updates)
+  - [Cutting a release](#cutting-a-release)
+  - [Updating an instance](#updating-an-instance)
+- [Managing people](#managing-people)
+- [Development](#development)
+  - [Layout](#layout)
+- [Built with](#built-with)
+- [How AI is used](#how-ai-is-used)
+- [Not done yet](#not-done-yet)
+- [Licensing](#licensing)
+  - [Barback itself](#barback-itself)
+  - [Third-party code](#third-party-code)
+  - [The photograph](#the-photograph)
+  - [The wordmark typeface](#the-wordmark-typeface)
+  - [Cocktail data](#cocktail-data)
+- [Credits](#credits)
+
 ## What it does
 
 **Inventory** — Everything behind your bar: spirits, liqueurs, vermouth,
@@ -660,6 +696,30 @@ candidates.
 The image is around 560 MB, most of it the Prisma CLI that applies migrations
 on startup. It's bundled deliberately: it means the container brings its own
 schema up to date and you never run a migration by hand.
+
+## How AI is used
+
+**In development.** Barback was written from an empty repository by Claude,
+Anthropic's coding model, across one long interactive session. The code, the
+comments and this documentation were all written by it. My part was deciding
+rather than typing: what to build, how authentication should work, which
+cocktail services to use, the licence, and which third-party assets to
+accept.
+
+It is a personal project for my own bar, shared in case it is useful to
+someone else. There is no automated test suite and it has not had an
+independent security review — worth weighing before you expose an instance
+to the internet.
+
+**At runtime, there is no AI in Barback.** No model dependency, no inference
+calls, no API keys for any AI service, no telemetry. Your inventory, your
+recipes, your photos and your tasting notes live in a SQLite file on your own
+disk and are never sent anywhere. The only outbound requests are the cocktail
+lookups you press a button for and the optional daily update check — see
+[API lookups only happen when you ask](#api-lookups-only-happen-when-you-ask).
+
+The longer version, including what gated the work, what did not, and the bugs
+this approach produced, is in **[docs/AI-USAGE.md](docs/AI-USAGE.md)**.
 
 ## Not done yet
 
