@@ -157,40 +157,6 @@ const ALIASES: Record<string, string> = {
   "maraschino cherries": "cherry",
   cherries: "cherry",
   "cocktail cherry": "cherry",
-  // Citrus garnishes. Every form routes through the bare fruit, which
-  // resolves on to its juice -- so a lime in the fridge covers a recipe
-  // asking for a lime peel, a wheel or a twist, and the forms cannot drift
-  // apart from one another again. Before this, "lemon peel" pointed at
-  // "lemon twist", a slug no inventory item could ever hold, so it matched
-  // nothing at all.
-  "lime peel": "lime",
-  "lime zest": "lime",
-  "lime twist": "lime",
-  "lime wedge": "lime",
-  "lime wheel": "lime",
-  "lime slice": "lime",
-  "lime round": "lime",
-  "lemon peel": "lemon",
-  "lemon zest": "lemon",
-  "lemon twist": "lemon",
-  "lemon wedge": "lemon",
-  "lemon wheel": "lemon",
-  "lemon slice": "lemon",
-  "lemon round": "lemon",
-  "orange peel": "orange",
-  "orange zest": "orange",
-  "orange twist": "orange",
-  "orange wedge": "orange",
-  "orange wheel": "orange",
-  "orange slice": "orange",
-  "orange round": "orange",
-  "grapefruit peel": "grapefruit",
-  "grapefruit zest": "grapefruit",
-  "grapefruit twist": "grapefruit",
-  "grapefruit wedge": "grapefruit",
-  "grapefruit wheel": "grapefruit",
-  "grapefruit slice": "grapefruit",
-  "grapefruit round": "grapefruit",
   olive: "olives",
   olives: "olives",
   "mint sprig": "mint",
@@ -304,6 +270,56 @@ const NOISE = new Set([
   "topped", "top", "up", "your", "favourite", "favorite", "any", "style",
 ]);
 
+/**
+ * Citrus whose garnishes are a piece of the fruit rather than a measure of
+ * it. A twist, a wedge and a slice are all units of quantity elsewhere
+ * ("1 twist of orange"), so without this they reduce to the bare fruit and
+ * become indistinguishable from a bottle of its juice.
+ */
+const CITRUS = new Set(["lime", "lemon", "orange", "grapefruit"]);
+
+const CITRUS_GARNISH_FORMS = new Set([
+  "peel",
+  "zest",
+  "twist",
+  "wedge",
+  "wheel",
+  "slice",
+  "round",
+  "spiral",
+]);
+
+/**
+ * Read a citrus garnish out of a phrase, in either word order.
+ *
+ * Returns the fruit and the canonical singular form, so "2 lemon wedges" and
+ * "wedge of lemon" land on the same key.
+ */
+export function citrusGarnish(phrase: string): { fruit: string; slug: string } | null {
+  const words = phrase.split(" ").filter((w) => w !== "of");
+  if (words.length !== 2) return null;
+
+  const singular = (word: string) => (word.endsWith("s") ? word.slice(0, -1) : word);
+  const [first, second] = words;
+
+  for (const [fruit, form] of [
+    [first, second],
+    [second, first],
+  ]) {
+    if (!CITRUS.has(singular(fruit))) continue;
+    const shape = singular(form);
+    if (CITRUS_GARNISH_FORMS.has(shape)) {
+      return { fruit: singular(fruit), slug: `${singular(fruit)} ${shape}` };
+    }
+  }
+  return null;
+}
+
+/** The fruit a citrus-garnish slug is a piece of, or null. */
+export function citrusGarnishFruit(slug: string): string | null {
+  return citrusGarnish(slug)?.fruit ?? null;
+}
+
 const MEASURE_WORDS = new Set([
   "oz", "ounce", "ounces", "ml", "cl", "l", "liter", "litre", "litres",
   "tsp", "teaspoon", "teaspoons", "tbsp", "tablespoon", "tablespoons",
@@ -333,6 +349,13 @@ export function slugifyIngredient(raw: string): string {
     .replace(/[-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  // Before anything is stripped: a piece of citrus is the ingredient, not a
+  // quantity of one. "lemon twist" must survive the measure-word filter that
+  // would otherwise read "twist" as a unit and leave a bare "lemon".
+  const whole = text.split(" ").filter(Boolean).join(" ");
+  const garnish = citrusGarnish(whole);
+  if (garnish) return garnish.slug;
 
   let words = text.split(" ").filter(Boolean).filter((w) => !MEASURE_WORDS.has(w));
 
@@ -402,8 +425,18 @@ function wordSet(slug: string): Set<string> {
   return new Set(slug.split(" ").filter(Boolean));
 }
 
-/** Does `inventorySlug` cover `recipeSlug`? */
-function covers(inventorySlug: string, recipeSlug: string): MatchKind | null {
+/**
+ * Does `inventorySlug` cover `recipeSlug`?
+ *
+ * `freshSlugs` are the items shelved as fresh produce or garnishes — the
+ * whole fruit rather than a bottle. Without it there is no way to tell a lime
+ * from a carton of lime juice, since both are recorded as "lime juice".
+ */
+function covers(
+  inventorySlug: string,
+  recipeSlug: string,
+  freshSlugs?: ReadonlySet<string>,
+): MatchKind | null {
   if (!inventorySlug || !recipeSlug) return null;
   if (inventorySlug === recipeSlug) return "exact";
 
@@ -422,6 +455,17 @@ function covers(inventorySlug: string, recipeSlug: string): MatchKind | null {
 
   if (SUBSTITUTES_FOR.get(inventorySlug)?.has(recipeSlug)) return "substitute";
 
+  // A piece of citrus has to come off a piece of citrus. The fruit is
+  // recorded as its juice, so the shelf it sits on is what separates a lime
+  // in the fridge from a bottle of Rose's.
+  const fruit = citrusGarnishFruit(recipeSlug);
+  if (fruit && freshSlugs?.has(inventorySlug)) {
+    const asJuice = `${fruit} juice`;
+    if (inventorySlug === asJuice || inventorySlug === fruit) return "exact";
+    // Lemons and limes already stand in for each other.
+    if (SUBSTITUTES_FOR.get(inventorySlug)?.has(asJuice)) return "substitute";
+  }
+
   return null;
 }
 
@@ -439,10 +483,11 @@ const KIND_RANK: Record<MatchKind, number> = {
 export function findMatch(
   recipeSlug: string,
   inventorySlugs: Iterable<string>,
+  freshSlugs?: ReadonlySet<string>,
 ): IngredientMatch | null {
   let best: IngredientMatch | null = null;
   for (const inventorySlug of inventorySlugs) {
-    const kind = covers(inventorySlug, recipeSlug);
+    const kind = covers(inventorySlug, recipeSlug, freshSlugs);
     if (!kind) continue;
     if (!best || KIND_RANK[kind] < KIND_RANK[best.kind]) {
       best = { kind, inventorySlug };

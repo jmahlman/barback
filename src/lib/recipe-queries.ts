@@ -6,7 +6,7 @@ import { uploadUrl } from "@/lib/uploads";
 export async function loadInventoryIndex(userId: string) {
   const items = await db.inventoryItem.findMany({
     where: { userId },
-    select: { slug: true, name: true, inStock: true },
+    select: { slug: true, name: true, inStock: true, category: true },
   });
   return buildInventoryIndex(items);
 }

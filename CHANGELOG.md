@@ -11,6 +11,22 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+**A lemon and a bottle of lemon juice are no longer the same thing.** Which
+shelf you put something on now decides whether it can produce a garnish: a
+lime in Fresh & Perishable covers a recipe asking for a lime wedge, peel,
+wheel, zest or twist, and a carton of lime juice in Juices does not. You do
+not have to mark anything — the shelf you already chose carries it.
+
+Asking for a twist, a wedge or a slice used to be recorded as asking for the
+fruit's juice, because those words are also units of quantity ("1 twist of
+orange") and were stripped before the ingredient was identified. They are
+kept whole now, in either word order and singular or plural, so "2 wedges of
+lemon" and "lemon wedge" are the same thing.
+
+Existing recipes are migrated. Garnishes still never block a drink, so a
+Negroni whose orange twist you cannot produce is still a Negroni you can
+make — it just says so honestly.
+
 **Citrus garnishes match the fruit again.** Asking for a lime peel, a lemon
 zest, an orange wheel or a grapefruit twist showed as missing even with the
 fruit in the fridge: those forms pointed at slugs that no inventory item

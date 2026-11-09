@@ -42,19 +42,33 @@ export interface InventoryIndex {
   slugs: Set<string>;
   /** slug -> display name, for explaining a match. */
   names: Map<string, string>;
+  /**
+   * Slugs shelved as fresh produce or garnishes: the whole fruit rather than
+   * a bottle of its juice. A lime and a carton of lime juice are recorded
+   * under the same slug, so the shelf is the only thing that tells them
+   * apart — and a lemon peel can only come off the former.
+   */
+  fresh: Set<string>;
 }
 
+/** Shelves that hold the thing itself rather than something poured from it. */
+const WHOLE_INGREDIENT_SHELVES: ReadonlySet<string> = new Set(["fresh", "garnish"]);
+
 export function buildInventoryIndex(
-  items: { slug: string; name: string; inStock: boolean }[],
+  items: { slug: string; name: string; inStock: boolean; category?: string | null }[],
 ): InventoryIndex {
   const slugs = new Set<string>();
   const names = new Map<string, string>();
+  const fresh = new Set<string>();
   for (const item of items) {
     if (!item.inStock || !item.slug) continue;
     slugs.add(item.slug);
     if (!names.has(item.slug)) names.set(item.slug, item.name);
+    if (item.category && WHOLE_INGREDIENT_SHELVES.has(item.category)) {
+      fresh.add(item.slug);
+    }
   }
-  return { slugs, names };
+  return { slugs, names, fresh };
 }
 
 const KIND_WEIGHT: Record<MatchKind, number> = {
@@ -73,7 +87,9 @@ export function evaluateRecipe(
 
   const ingredients: EvaluatedIngredient[] = required.map((ingredient) => {
     const isStaple = assumeStaples && PANTRY_STAPLES.has(ingredient.slug);
-    const match = ingredient.slug ? findMatch(ingredient.slug, inventory.slugs) : null;
+    const match = ingredient.slug
+      ? findMatch(ingredient.slug, inventory.slugs, inventory.fresh)
+      : null;
     return {
       ...ingredient,
       match,
