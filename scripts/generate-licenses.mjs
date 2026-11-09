@@ -1,5 +1,5 @@
 /**
- * Collect licence information for everything installed in node_modules and
+ * Collect license information for everything installed in node_modules and
  * write it to src/data/licenses.json, which the Settings page renders.
  *
  * Run as part of `npm run build`, so the shipped list always matches the
@@ -14,8 +14,8 @@ const ROOT = process.cwd();
 const MODULES = path.join(ROOT, "node_modules");
 const OUT = path.join(ROOT, "src", "data", "licenses.json");
 
-/** Filenames that typically hold the full licence text. */
-const LICENCE_FILES = [
+/** Filenames that typically hold the full license text. */
+const LICENSE_FILES = [
   "LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md",
   "LICENCE.txt", "license", "license.md", "LICENSE-MIT", "COPYING",
 ];
@@ -56,7 +56,7 @@ async function listPackages(dir) {
   return found;
 }
 
-function normaliseLicence(pkg) {
+function normalizeLicense(pkg) {
   if (typeof pkg.license === "string") return pkg.license;
   if (pkg.license && typeof pkg.license === "object" && pkg.license.type) {
     return pkg.license.type;
@@ -85,8 +85,8 @@ function authorOf(pkg) {
   return null;
 }
 
-async function findLicenceText(dir) {
-  for (const name of LICENCE_FILES) {
+async function findLicenseText(dir) {
+  for (const name of LICENSE_FILES) {
     const file = path.join(dir, name);
     try {
       const info = await stat(file);
@@ -118,7 +118,7 @@ async function main() {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const text = await findLicenceText(dir);
+    const text = await findLicenseText(dir);
     let textHash = null;
     if (text) {
       textHash = createHash("sha1").update(text).digest("hex").slice(0, 12);
@@ -128,7 +128,7 @@ async function main() {
     packages.push({
       name: pkg.name,
       version: pkg.version,
-      license: normaliseLicence(pkg),
+      license: normalizeLicense(pkg),
       author: authorOf(pkg),
       url: repoUrl(pkg),
       direct: direct.has(pkg.name),
@@ -159,11 +159,11 @@ async function main() {
 
   const bytes = Buffer.byteLength(JSON.stringify(payload));
   console.log(
-    `licenses.json: ${packages.length} packages, ${texts.size} distinct licence texts, ${(bytes / 1024).toFixed(0)} KB`,
+    `licenses.json: ${packages.length} packages, ${texts.size} distinct license texts, ${(bytes / 1024).toFixed(0)} KB`,
   );
 }
 
 main().catch((error) => {
-  console.error("Could not collect licences:", error);
+  console.error("Could not collect licenses:", error);
   process.exit(1);
 });

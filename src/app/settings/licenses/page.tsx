@@ -69,7 +69,7 @@ export default async function LicensesPage({
           <p className="text-xs text-bar-400">
             You may use, modify and redistribute it, including commercially,
             so long as the notices stay intact and your changes are published
-            under the same licence. Running a modified version as a service
+            under the same license. Running a modified version as a service
             counts as distributing it.
           </p>
         </section>
@@ -148,7 +148,7 @@ export default async function LicensesPage({
                   rel="noreferrer noopener"
                   className="text-brass-300 underline-offset-4 hover:underline"
                 >
-                  the bundled licence
+                  the bundled license
                 </a>
                 .
               </p>
@@ -175,7 +175,7 @@ export default async function LicensesPage({
                   zxing-cpp
                 </a>{" "}
                 compiled to WebAssembly, served by this instance rather than a
-                CDN. No image ever leaves your browser. Their licences are
+                CDN. No image ever leaves your browser. Their licenses are
                 listed below with every other package.
               </p>
             </li>

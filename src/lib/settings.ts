@@ -134,7 +134,7 @@ export async function setSetting(key: SettingKey, value: string): Promise<void> 
   });
 }
 
-/** Never show a stored key in full; just enough to recognise it. */
+/** Never show a stored key in full; just enough to recognize it. */
 export function maskSecret(value: string): string {
   if (!value) return "";
   if (value.length <= 4) return "•".repeat(value.length);

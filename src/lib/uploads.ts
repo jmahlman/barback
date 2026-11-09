@@ -87,7 +87,7 @@ export async function saveRecipeImage(file: File): Promise<string> {
  * and not something to rely on — a different client, a failed canvas, or a
  * format the browser could not decode all arrive here full size. Formats this
  * build of sharp cannot read (AVIF, depending on how it was compiled) fall
- * through unchanged rather than failing the upload, which is the behaviour
+ * through unchanged rather than failing the upload, which is the behavior
  * these had before any resizing existed.
  */
 async function shrink(
@@ -206,7 +206,7 @@ function thumbnailRelative(relative: string, width: ThumbnailWidth): string {
  *
  * Recipe cards draw an 80px square. Without this they would download the
  * whole 1600px photograph to do it, because uploads are served straight from
- * disk — Next's image optimiser cannot be used here, since these files sit
+ * disk — Next's image optimizer cannot be used here, since these files sit
  * behind authentication and it fetches them without the viewer's cookies.
  *
  * Returns null when the size cannot be produced, so the caller can fall back

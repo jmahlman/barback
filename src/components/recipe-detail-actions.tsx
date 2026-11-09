@@ -23,7 +23,7 @@ export function FavoriteButton({
       type="button"
       disabled={pending}
       aria-pressed={isFavorite}
-      aria-label={isFavorite ? "Remove from favourites" : "Add to favourites"}
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       onClick={() =>
         startTransition(async () => {
           await toggleFavorite(id);

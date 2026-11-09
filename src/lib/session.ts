@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { isSetupComplete } from "@/lib/setup";
 import {
   isPlaceholderEmail,
-  normaliseUsername,
+  normalizeUsername,
   placeholderEmail,
 } from "@/lib/identity";
 import {
@@ -88,7 +88,7 @@ async function resolveProxyUser(): Promise<CurrentUser | null> {
     }
   }
 
-  const username = normaliseUsername(incoming.get(PROXY_HEADERS.user) ?? "");
+  const username = normalizeUsername(incoming.get(PROXY_HEADERS.user) ?? "");
   const emailHeader = incoming.get(PROXY_HEADERS.email)?.trim().toLowerCase() ?? "";
   const displayName = incoming.get(PROXY_HEADERS.name)?.trim() ?? "";
   const groups = (incoming.get(PROXY_HEADERS.groups) ?? "")
@@ -250,7 +250,7 @@ async function resolveSingleUser(): Promise<CurrentUser> {
       id: crypto.randomUUID(),
       name: SINGLE_USER_NAME,
       email: SINGLE_USER_EMAIL,
-      username: normaliseUsername(SINGLE_USER_NAME) || "owner",
+      username: normalizeUsername(SINGLE_USER_NAME) || "owner",
       emailVerified: true,
       role: "admin",
     },

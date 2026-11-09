@@ -14,7 +14,7 @@
 
 /** What a lookup knows about a bottle. */
 export interface ProductLookup {
-  /** Normalised barcode. */
+  /** Normalized barcode. */
   code: string;
   title: string | null;
   brand: string | null;

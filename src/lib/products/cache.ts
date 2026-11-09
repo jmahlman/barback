@@ -17,7 +17,7 @@ import type { ProductLookup } from "@/lib/products/types";
  *  year is there only so a bad parse eventually heals itself. */
 const HIT_TTL_MS = 365 * 24 * 60 * 60 * 1000;
 
-/** Catalogues do grow, so a miss is worth retrying eventually. */
+/** Catalogs do grow, so a miss is worth retrying eventually. */
 const MISS_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type CacheResult =

@@ -60,7 +60,7 @@ describe("slugifyIngredient", () => {
 });
 
 describe("isKnownBase", () => {
-  test("recognises things recipes actually ask for", () => {
+  test("recognizes things recipes actually ask for", () => {
     assert.equal(isKnownBase("gin"), true);
     assert.equal(isKnownBase("sweet vermouth"), true);
     assert.equal(isKnownBase("angostura bitters"), true);

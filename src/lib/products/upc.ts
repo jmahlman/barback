@@ -32,7 +32,7 @@ function checkDigit(body: string): number {
 const VALID_LENGTHS = new Set([8, 12, 13]);
 
 /**
- * Normalise a scanned or typed barcode to its canonical stored form.
+ * Normalize a scanned or typed barcode to its canonical stored form.
  *
  * UPC-A is structurally an EAN-13 with a leading zero, and different decoders
  * disagree about whether to report the zero, so a 12-digit code is padded to
@@ -44,7 +44,7 @@ const VALID_LENGTHS = new Set([8, 12, 13]);
  *
  * Returns null when there are no usable digits or too many of them.
  */
-export function normaliseBarcode(raw: string): string | null {
+export function normalizeBarcode(raw: string): string | null {
   const digits = digitsOnly(raw);
   if (!VALID_LENGTHS.has(digits.length)) return null;
   return digits.length === 12 ? `0${digits}` : digits;
@@ -53,11 +53,11 @@ export function normaliseBarcode(raw: string): string | null {
 /**
  * Does this barcode's check digit agree with the rest of it?
  *
- * Takes a raw or normalised code. A code that fails here never reaches the
+ * Takes a raw or normalized code. A code that fails here never reaches the
  * network.
  */
 export function isValidBarcode(raw: string): boolean {
-  const code = normaliseBarcode(raw);
+  const code = normalizeBarcode(raw);
   if (!code) return false;
   // All-zeros passes the checksum arithmetic but is never a real product.
   if (/^0+$/u.test(code)) return false;

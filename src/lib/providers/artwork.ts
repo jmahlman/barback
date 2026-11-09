@@ -7,7 +7,7 @@ import { drinkImage, MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
  *
  * Linking straight to the provider would be less work, but it would mean a
  * recipe in your own book quietly fetching from someone else's server every
- * time you opened it — and going blank the day they reorganise their files.
+ * time you opened it — and going blank the day they reorganize their files.
  * A recipe you have saved should be yours, pictures included.
  *
  * Like every other outbound call in Barback, this only ever runs from an

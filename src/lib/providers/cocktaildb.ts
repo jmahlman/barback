@@ -143,7 +143,7 @@ export const cocktailDbProvider: CocktailProvider = {
   id: "cocktaildb",
   label: "TheCocktailDB",
   description:
-    "Photos, glassware and category metadata, with measures already separated from ingredient names. Its free key returns only one drink per ingredient search, so Barback downloads the whole catalogue once and matches your shelf locally instead. Not licensed for public instances.",
+    "Photos, glassware and category metadata, with measures already separated from ingredient names. Its free key returns only one drink per ingredient search, so Barback downloads the whole catalog once and matches your shelf locally instead. Not licensed for public instances.",
   attribution:
     "Recipe data and imagery: TheCocktailDB (https://www.thecocktaildb.com/)",
   capabilities: {
@@ -151,9 +151,9 @@ export const cocktailDbProvider: CocktailProvider = {
     stableIds: true,
     multiIngredientFilter: false,
     // filter.php returns a single drink on the free development key, so
-    // discovery pulls the catalogue instead. See fetchCatalogue below.
+    // discovery pulls the catalog instead. See fetchCatalog below.
     resultLimit: null,
-    catalogue: true,
+    catalog: true,
   },
 
   async isConfigured() {
@@ -183,7 +183,7 @@ export const cocktailDbProvider: CocktailProvider = {
   },
 
   /**
-   * Pull the whole catalogue, a letter at a time.
+   * Pull the whole catalog, a letter at a time.
    *
    * `search.php?f=<letter>` is the one free endpoint that returns complete
    * drinks — ingredients, measures, instructions and all — rather than ids
@@ -195,7 +195,7 @@ export const cocktailDbProvider: CocktailProvider = {
    * drink on the free development key, which made ingredient-led discovery
    * useless: eight shelf ingredients produced eight arbitrary cocktails.
    */
-  async fetchCatalogue(onProgress?: (done: number, total: number) => void) {
+  async fetchCatalog(onProgress?: (done: number, total: number) => void) {
     const letters = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
     const found = new Map<string, ProviderDrink>();
     let failures = 0;

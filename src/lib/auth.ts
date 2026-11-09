@@ -7,7 +7,7 @@ import { APIError } from "better-auth/api";
 import { isAdminCreatingUser } from "@/lib/admin-context";
 import { getAuthMode } from "@/lib/auth-mode";
 import { db } from "@/lib/db";
-import { normaliseUsername } from "@/lib/identity";
+import { normalizeUsername } from "@/lib/identity";
 
 /**
  * Barback's own email-and-password authentication.
@@ -108,7 +108,7 @@ export const auth = betterAuth({
             select: { username: true, email: true },
           });
           if (existing && !existing.username) {
-            const base = normaliseUsername(existing.email.split("@")[0]) || "user";
+            const base = normalizeUsername(existing.email.split("@")[0]) || "user";
             let candidate = base;
             for (let n = 2; n < 50; n += 1) {
               const taken = await db.user.findUnique({

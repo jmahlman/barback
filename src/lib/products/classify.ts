@@ -18,7 +18,7 @@ import { titleCase } from "@/lib/providers/api-ninjas-parse";
 const TRAILING_SIZE =
   /[\s,;|/–—-]*\(?\s*(\d+(?:[.,]\d+)?)\s*(ml|cl|dl|l|liters?|litres?|fl\.?\s*oz|oz|pt|qt|gal)\b\.?\s*\)?\s*$/iu;
 
-/** Unit spellings we normalise on the way out. */
+/** Unit spellings we normalize on the way out. */
 const UNIT_DISPLAY: Record<string, string> = {
   ml: "ml",
   cl: "cl",

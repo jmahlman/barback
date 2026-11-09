@@ -16,7 +16,7 @@ export function looksLikeEmail(value: string): boolean {
  * decoration directories tend to add. Stored exactly as this, so a proxy
  * sending "John" matches an account created as "john".
  */
-export function normaliseUsername(raw: string): string {
+export function normalizeUsername(raw: string): string {
   return raw
     .trim()
     .toLowerCase()
@@ -39,7 +39,7 @@ const RESERVED = new Set([
 ]);
 
 export function validateUsername(raw: string): UsernameCheck {
-  const value = normaliseUsername(raw);
+  const value = normalizeUsername(raw);
 
   if (!value) {
     return { ok: false, value, error: "Pick a username." };

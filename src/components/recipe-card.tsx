@@ -52,7 +52,7 @@ export function RecipeCard({
             {recipe.name}
           </h3>
           {recipe.isFavorite ? (
-            <StarIcon filled className="mt-1 size-4 shrink-0 text-brass-400" aria-label="Favourite" />
+            <StarIcon filled className="mt-1 size-4 shrink-0 text-brass-400" aria-label="Favorite" />
           ) : null}
         </div>
 

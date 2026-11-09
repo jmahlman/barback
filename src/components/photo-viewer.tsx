@@ -41,7 +41,7 @@ export function PhotoViewer({
   unoptimized?: boolean;
   /**
    * `sizes` for the enlarged copy. Only meaningful when the image is being
-   * optimised: the picture is laid out at its intrinsic size, so this is what
+   * optimized: the picture is laid out at its intrinsic size, so this is what
    * decides which variant gets fetched — leave it too small and "larger"
    * turns out barely larger at all.
    */
@@ -49,7 +49,7 @@ export function PhotoViewer({
   /**
    * How large the source actually is, when that is known.
    *
-   * An optimised image is served through a `srcset`, and a browser reports
+   * An optimized image is served through a `srcset`, and a browser reports
    * its natural size divided by the density it picked — so laying the
    * enlarged copy out intrinsically makes it *smaller* the better the
    * variant it chose. Giving a cap switches to definite sizing: it fills the

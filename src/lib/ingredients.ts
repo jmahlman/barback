@@ -1,5 +1,5 @@
 /**
- * Ingredient name normalisation and matching.
+ * Ingredient name normalization and matching.
  *
  * Recipes (especially ones imported from TheCocktailDB) name things loosely:
  * "Fresh lime juice", "Juice of a lime", "Lime juice" and "limes" all mean the
@@ -249,7 +249,7 @@ const KNOWN_BASES = new Set<string>([...Object.values(ALIASES), ...EXTRA_BASES])
 
 /**
  * Collapse "beefeater london dry gin" to "gin" by finding the longest trailing
- * phrase we recognise. Returns null when nothing is recognised.
+ * phrase we recognize. Returns null when nothing is recognized.
  */
 function baseFromSuffix(words: string[]): string | null {
   // Longest suffix first, but never the whole phrase (that was already tried).
@@ -267,7 +267,7 @@ const NOISE = new Set([
   "quality", "premium", "optional", "to", "taste", "for", "garnish", "splash",
   "dash", "dashes", "of", "a", "an", "the", "some", "or", "and", "plus",
   "about", "approx", "approximately", "well", "very", "extra", "fill", "with",
-  "topped", "top", "up", "your", "favourite", "favorite", "any", "style",
+  "topped", "top", "up", "your", "favorite", "favorite", "any", "style",
 ]);
 
 /**
@@ -343,7 +343,7 @@ export function slugifyIngredient(raw: string): string {
     .replace(/[0-9]+\s*\/\s*[0-9]+/g, " ")
     .replace(/[¼-¾⅐-⅞]/g, " ")
     .replace(/[0-9]+([.,][0-9]+)?/g, " ")
-    // normalise punctuation but keep accented letters
+    // normalize punctuation but keep accented letters
     .replace(/['’]s\b/g, "")
     .replace(/[^\p{L}\s-]/gu, " ")
     .replace(/[-]+/g, " ")
@@ -397,7 +397,7 @@ export function slugifyIngredient(raw: string): string {
 /**
  * Is this slug something recipes are actually likely to ask for?
  *
- * `slugifyIngredient` always returns something, but for an unrecognised name
+ * `slugifyIngredient` always returns something, but for an unrecognized name
  * that something is the whole cleaned phrase, which will match no recipe. The
  * inventory form uses this to warn that a bottle needs a match key set by
  * hand -- most often after a barcode scan, since a machine-generated product

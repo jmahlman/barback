@@ -96,7 +96,7 @@ Worth knowing:
 
 **Saving a cocktail from Discover now keeps its photograph.** The picture is
 downloaded into your own uploads folder rather than linked, so a recipe in
-your book stays intact if the provider reorganises its files or you are
+your book stays intact if the provider reorganizes its files or you are
 offline. The recipe page says where the photo came from, and putting your own
 picture there replaces it and drops the credit.
 
@@ -131,8 +131,8 @@ now has a reveal toggle, which matters most on a phone in a dark room.
 
 **Settings → Outside services.** A page listing everything Barback can
 contact, what each one is told and when, and a link to its terms. It is not
-the open-source licence page: none of these is open source, and a commercial
-data service does not belong under "licences in use".
+the open-source license page: none of these is open source, and a commercial
+data service does not belong under "licenses in use".
 
 **Removed the last traces of social login.** Barback signs people in locally
 or through a reverse proxy, but the People page still offered to leave a
@@ -161,5 +161,5 @@ Worth knowing on a fresh install:
   lookups happen on a button press; the daily update check is off until you
   turn it on.
 - **TheCocktailDB's free key returns one drink per ingredient search**, so
-  discovery downloads the catalogue once (about 440 drinks) and matches your
+  discovery downloads the catalog once (about 440 drinks) and matches your
   shelf locally from then on. No premium key needed.

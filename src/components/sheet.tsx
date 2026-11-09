@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { XIcon } from "@/components/icons";
 
 /**
- * Bottom sheet on mobile, centred dialog on desktop.
+ * Bottom sheet on mobile, centered dialog on desktop.
  * Uses a native <dialog> so focus trapping and Esc come for free.
  */
 export function Sheet({

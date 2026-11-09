@@ -30,7 +30,7 @@ export default async function SetupPage() {
           </span>
           <h1 className="font-logo text-4xl text-brass-300 sm:text-5xl">Barback</h1>
           <p className="mt-2 text-sm text-bar-200">
-            Your home bar, organised. Let&apos;s make your account.
+            Your home bar, organized. Let&apos;s make your account.
           </p>
         </header>
 

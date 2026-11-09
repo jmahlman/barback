@@ -7,8 +7,8 @@ export const metadata: Metadata = { title: "Outside services" };
 /**
  * Every service Barback can talk to, what it sends, and under whose terms.
  *
- * Deliberately not on the open-source licences page: none of these is open
- * source, and filing a commercial data service under "licences in use" would
+ * Deliberately not on the open-source licenses page: none of these is open
+ * source, and filing a commercial data service under "licenses in use" would
  * misrepresent both. This page answers a different question — not "what is
  * this built from" but "what leaves my instance, and when".
  *
@@ -46,9 +46,9 @@ const SERVICES: Service[] = [
     name: "TheCocktailDB",
     href: "https://www.thecocktaildb.com/",
     purpose:
-      "Cocktail recipes and photographs, and the catalogue Discover matches your shelf against.",
+      "Cocktail recipes and photographs, and the catalog Discover matches your shelf against.",
     sends:
-      "A drink name, an ingredient, or a request for the catalogue. Never your inventory. Only on an explicit button press.",
+      "A drink name, an ingredient, or a request for the catalog. Never your inventory. Only on an explicit button press.",
     limits:
       "The free development key is for non-commercial use. Get a production key before putting an instance on the public internet.",
     termsHref: "https://www.thecocktaildb.com/api.php",

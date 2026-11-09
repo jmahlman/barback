@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { formatBarcode, isValidBarcode, normaliseBarcode } from "@/lib/products/upc";
+import { formatBarcode, isValidBarcode, normalizeBarcode } from "@/lib/products/upc";
 
 /**
  * Barcode arithmetic. These are the rules that decide whether a scan reaches
@@ -8,36 +8,36 @@ import { formatBarcode, isValidBarcode, normaliseBarcode } from "@/lib/products/
  * allowance of a hundred — and silently accepts codes that were misread.
  */
 
-describe("normaliseBarcode", () => {
+describe("normalizeBarcode", () => {
   test("keeps a 13-digit EAN-13 as it is", () => {
-    assert.equal(normaliseBarcode("0619947000020"), "0619947000020");
+    assert.equal(normalizeBarcode("0619947000020"), "0619947000020");
   });
 
   test("pads a 12-digit UPC-A to 13, since the two are the same code", () => {
-    assert.equal(normaliseBarcode("619947000020"), "0619947000020");
+    assert.equal(normalizeBarcode("619947000020"), "0619947000020");
   });
 
   test("leaves EAN-8 at eight digits rather than padding it", () => {
     // Padding would claim a completely different product.
-    assert.equal(normaliseBarcode("12345670"), "12345670");
+    assert.equal(normalizeBarcode("12345670"), "12345670");
   });
 
   test("ignores the spaces a person types", () => {
-    assert.equal(normaliseBarcode("0 619947 00002 0"), "0619947000020");
+    assert.equal(normalizeBarcode("0 619947 00002 0"), "0619947000020");
   });
 
   test("ignores dashes", () => {
-    assert.equal(normaliseBarcode("0-619947-000020"), "0619947000020");
+    assert.equal(normalizeBarcode("0-619947-000020"), "0619947000020");
   });
 
   test("rejects a length that is not a barcode", () => {
-    assert.equal(normaliseBarcode("12345"), null);
-    assert.equal(normaliseBarcode("12345678901234"), null);
+    assert.equal(normalizeBarcode("12345"), null);
+    assert.equal(normalizeBarcode("12345678901234"), null);
   });
 
   test("rejects text with no digits", () => {
-    assert.equal(normaliseBarcode("not a barcode"), null);
-    assert.equal(normaliseBarcode(""), null);
+    assert.equal(normalizeBarcode("not a barcode"), null);
+    assert.equal(normalizeBarcode(""), null);
   });
 });
 
@@ -62,7 +62,7 @@ describe("isValidBarcode", () => {
     assert.equal(isValidBarcode("00000000"), false);
   });
 
-  test("rejects anything that does not normalise", () => {
+  test("rejects anything that does not normalize", () => {
     assert.equal(isValidBarcode("12345"), false);
     assert.equal(isValidBarcode(""), false);
   });

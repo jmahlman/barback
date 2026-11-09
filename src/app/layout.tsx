@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s · Barback",
   },
   description:
-    "Your home bar, organised. Track what you have, keep your recipes, and find out what you can make tonight.",
+    "Your home bar, organized. Track what you have, keep your recipes, and find out what you can make tonight.",
   applicationName: "Barback",
   appleWebApp: {
     capable: true,

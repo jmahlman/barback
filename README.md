@@ -67,11 +67,11 @@ are shrunk in the browser before they are uploaded and resized again on the
 server, so a photo straight off a phone does not take an age to send or sit
 on your disk at full size. Saving a drink from Discover copies its picture
 into your own uploads folder rather than linking to it, so the recipe stays
-intact if the provider reorganises its files — and the page says where the
+intact if the provider reorganizes its files — and the page says where the
 photo came from until you put your own there. Tap any photo to see it larger.
 
 **What can I make** — Every recipe is checked against your inventory and
-labelled "you can make this" or "missing X". Optional ingredients and garnishes
+labeled "you can make this" or "missing X". Optional ingredients and garnishes
 never block a drink. A small amount of bartender knowledge is built in:
 
 - Brand names collapse to their base: *Beefeater London Dry Gin* → `gin`
@@ -148,7 +148,7 @@ Its free key does cripple one thing: `filter.php?i=<ingredient>` returns a
 single drink, and filtering on several ingredients at once is premium-only.
 Searching your shelf one ingredient at a time would therefore return a
 handful of arbitrary cocktails. Barback works around it by downloading the
-whole catalogue once — about 440 drinks, complete with ingredients and
+whole catalog once — about 440 drinks, complete with ingredients and
 measures — and matching locally from then on. That is roughly 36 requests,
 made once, and everything afterwards is offline.
 
@@ -691,14 +691,14 @@ SEED_EMAIL=you@example.com npm run seed
 | `npm run db:migrate` | Create and apply a migration |
 | `npm run db:studio` | Browse the database |
 | `npm run seed` | Starter data (needs `SEED_EMAIL`) |
-| `npm run licenses` | Regenerate the open-source licence list |
+| `npm run licenses` | Regenerate the open-source license list |
 | `npm version <major\|minor\|patch>` | Bump the version and tag a release |
 
 ### Layout
 
 ```
 prisma/schema.prisma           Data model and migrations
-src/lib/ingredients.ts         Name normalisation, families, substitutions
+src/lib/ingredients.ts         Name normalization, families, substitutions
 src/lib/matching.ts            Makeability scoring and ranking
 src/lib/settings.ts            Settings, database over environment
 src/lib/auth-mode.ts           Which authentication mode is active
@@ -706,7 +706,7 @@ src/lib/setup.ts               First-run state
 src/lib/identity.ts            Username rules, email-or-username telling
 src/lib/releases.ts            GitHub releases and update checking
 .github/workflows/release.yml  Tag -> image on GHCR -> GitHub Release
-scripts/generate-licenses.mjs  Builds the licence list from node_modules
+scripts/generate-licenses.mjs  Builds the license list from node_modules
 src/lib/session.ts             Resolves the current user, per mode
 src/lib/owner.ts               Who owns the instance
 src/lib/admin-context.ts       Marks admin-initiated user creation
@@ -755,7 +755,7 @@ schema up to date and you never run a migration by hand.
 Anthropic's coding model, across one long interactive session. The code, the
 comments and this documentation were all written by it. My part was deciding
 rather than typing: what to build, how authentication should work, which
-cocktail services to use, the licence, and which third-party assets to
+cocktail services to use, the license, and which third-party assets to
 accept.
 
 It is a personal project for my own bar, shared in case it is useful to
@@ -788,9 +788,9 @@ this approach produced, is in **[docs/AI-USAGE.md](docs/AI-USAGE.md)**.
 **[GNU AGPL-3.0-or-later](LICENSE).** You may use, modify and redistribute
 Barback, including commercially. In return:
 
-- Keep the copyright and licence notices — that is the credit requirement.
+- Keep the copyright and license notices — that is the credit requirement.
 - If you distribute a modified version, publish your changes under the same
-  licence.
+  license.
 - **If you run a modified version as a network service, you must offer its
   source to the people using it.** This is the part that distinguishes AGPL
   from plain GPL, and it is the reason to choose it: it keeps improvements
@@ -802,7 +802,7 @@ allowed is taking it private.
 ### Third-party code
 
 Every package this build is made from is listed in the app under
-**Settings → Open source**, with its version, licence and full licence text.
+**Settings → Open source**, with its version, license and full license text.
 That page is generated from the installed dependency tree at build time by
 `scripts/generate-licenses.mjs`, so it describes the exact image you are
 running rather than whatever was true when someone last updated a document.
@@ -819,9 +819,9 @@ and a handful of others. Two are worth knowing about specifically:
 - **`@img/sharp-libvips`** is LGPL-3.0-or-later and *is* included in the
   runtime image. It is the libvips binary behind `sharp`, which Barback uses
   to resize photographs on upload and to make the smaller copies cards are
-  served, and which Next.js uses for its own image optimisation. It ships as
+  served, and which Next.js uses for its own image optimization. It ships as
   a shared library, which is how practically every Next.js deployment works.
-  The licence text travels with it and is shown on the licences page.
+  The license text travels with it and is shown on the licenses page.
 - **`lightningcss`** (MPL-2.0), **`elkjs`** (EPL-2.0) and **`caniuse-lite`**
   (CC-BY-4.0) are build-time only and are not present in the runtime image.
 
@@ -839,10 +839,10 @@ It is used under the [Unsplash License](https://unsplash.com/license), which
 grants an irrevocable, worldwide, non-exclusive right to use, copy and modify
 the photo for free, commercially or otherwise, with **no permission and no
 attribution required**. Barback credits the photographer anyway, on the
-sign-in page and on the licences page, because attribution is what keeps
+sign-in page and on the licenses page, because attribution is what keeps
 photographers posting.
 
-The licence does not permit selling the photo without significant
+The license does not permit selling the photo without significant
 modification, or compiling Unsplash photos to build a competing service.
 Neither applies here. The file lives at `public/images/bar.jpg`, resized to
 1600px and recompressed from the original; replace it with anything you like.
@@ -852,14 +852,14 @@ Neither applies here. The file lives at `public/images/bar.jpg`, resized to
 The "Barback" logo is set in **Retro Gastroll** by
 [Arterfak Project](https://arterfakproject.com/product/retro-gastroll-free/).
 
-Both the vendor's page and the licence bundled with the font state it is
+Both the vendor's page and the license bundled with the font state it is
 free with unlimited usage and unlimited copies, with one restriction: you may
 not resell the font itself. Bundling it in an application is ordinary use and
-is not resale. The licence as supplied is at
+is not resale. The license as supplied is at
 `public/fonts/retro-gastroll-license.txt`, and the foundry offers a custom
-licence by email if you need something more explicit — worth doing if you
+license by email if you need something more explicit — worth doing if you
 plan to redistribute Barback widely, since the terms are a short note rather
-than a formal licence and say nothing specific about embedding in software.
+than a formal license and say nothing specific about embedding in software.
 
 It is applied only to the wordmark, through its own `--font-logo` token.
 Headings keep the serif stack: Retro Gastroll is a display face and would be
@@ -896,4 +896,4 @@ Unsplash. Wordmark set in Retro Gastroll by
 
 See [Licensing](#licensing) for the full picture. Inside the app,
 **Settings → Outside services** lists every service Barback can contact, and
-**Settings → Open source licenses** every package and its licence text.
+**Settings → Open source licenses** every package and its license text.

@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Barback",
     short_name: "Barback",
     description:
-      "Your home bar, organised. Track what you have, keep your recipes, and find out what you can make tonight.",
+      "Your home bar, organized. Track what you have, keep your recipes, and find out what you can make tonight.",
     start_url: "/",
     display: "standalone",
     background_color: "#0b0a0c",

@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { looksLikeEmail, normaliseUsername } from "@/lib/identity";
+import { looksLikeEmail, normalizeUsername } from "@/lib/identity";
 import type { ActionResult } from "@/actions/inventory";
 
 /**
@@ -30,7 +30,7 @@ export async function signInWithIdentifier(
   let email = raw.toLowerCase();
 
   if (!looksLikeEmail(raw)) {
-    const username = normaliseUsername(raw);
+    const username = normalizeUsername(raw);
     if (!username) return generic;
 
     const found = await db.user.findUnique({

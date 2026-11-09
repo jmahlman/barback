@@ -3,7 +3,7 @@
  *
  * Barback can read recipes from more than one upstream service. They differ a
  * lot — some have stable ids and photos, some return free text — so everything
- * is normalised to `ProviderDrink` before it reaches the rest of the app.
+ * is normalized to `ProviderDrink` before it reaches the rest of the app.
  *
  * Providers are only ever called from a server action, never while rendering.
  */
@@ -11,7 +11,7 @@
 export interface ProviderIngredient {
   /** Display name, e.g. "Blanco tequila". */
   name: string;
-  /** Normalised match key, e.g. "tequila". */
+  /** Normalized match key, e.g. "tequila". */
   slug: string;
   /** Measure exactly as published, e.g. "2 oz". Never invented. */
   measure: string | null;
@@ -47,8 +47,8 @@ export interface ProviderCapabilities {
   multiIngredientFilter: boolean;
   /** Maximum results a single query can return, if capped. */
   resultLimit: number | null;
-  /** Can hand over its whole catalogue, so matching happens locally. */
-  catalogue: boolean;
+  /** Can hand over its whole catalog, so matching happens locally. */
+  catalog: boolean;
 }
 
 export interface CocktailProvider {
@@ -78,10 +78,10 @@ export interface CocktailProvider {
    * Fetch everything the provider has, for providers that will hand it over.
    *
    * This is the better way to do discovery where it is available: pull the
-   * catalogue once, cache it, and match against the shelf locally for ever
+   * catalog once, cache it, and match against the shelf locally for ever
    * after. `onProgress` reports how far along it is.
    */
-  fetchCatalogue?(onProgress?: (done: number, total: number) => void): Promise<ProviderDrink[]>;
+  fetchCatalog?(onProgress?: (done: number, total: number) => void): Promise<ProviderDrink[]>;
 }
 
 /** Build the namespaced cache/URL key for a drink. */

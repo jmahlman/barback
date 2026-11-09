@@ -13,7 +13,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "makeable", label: "Can make" },
   { key: "close", label: "One away" },
-  { key: "favorites", label: "Favourites" },
+  { key: "favorites", label: "Favorites" },
 ];
 
 export function RecipeBrowser({ recipes }: { recipes: RecipeListEntry[] }) {

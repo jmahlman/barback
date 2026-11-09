@@ -15,7 +15,7 @@ import { CameraIcon } from "@/components/icons";
  * WebAssembly implementation rather than the browser's own. Safari, including
  * on iOS, has no working native detector, and iPhones are the main thing this
  * feature exists for — so the fallback is the path that matters, and running
- * one decoder everywhere means one set of behaviour to reason about instead
+ * one decoder everywhere means one set of behavior to reason about instead
  * of a different one per platform.
  */
 

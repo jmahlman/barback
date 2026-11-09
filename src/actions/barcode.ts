@@ -7,7 +7,7 @@ import { isOwner } from "@/lib/owner";
 import { getSetting, SETTING_KEYS } from "@/lib/settings";
 import { slugifyIngredient } from "@/lib/ingredients";
 import { cleanTitle, shelfFor } from "@/lib/products/classify";
-import { isValidBarcode, normaliseBarcode } from "@/lib/products/upc";
+import { isValidBarcode, normalizeBarcode } from "@/lib/products/upc";
 import {
   cacheMiss,
   cacheProduct,
@@ -82,7 +82,7 @@ function describeReset(resetAt: string | null): string {
 export async function lookupBarcode(raw: string): Promise<BarcodeOutcome> {
   const user = await requireUser();
 
-  const code = normaliseBarcode(raw);
+  const code = normalizeBarcode(raw);
   if (!code || !isValidBarcode(code)) {
     return {
       status: "invalid",

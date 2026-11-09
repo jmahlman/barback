@@ -442,7 +442,7 @@ export async function importExternalRecipe(
   });
 
   // The picture comes after the recipe exists, so a provider that is slow,
-  // unreachable or has reorganised its files costs you the photo and nothing
+  // unreachable or has reorganized its files costs you the photo and nothing
   // else. Imported artwork is re-encoded to at most MAX_DRINK_IMAGE_PX square
   // on the way in; uploads are served straight off disk without resizing.
   const artwork = await fetchDrinkArtwork(drink.thumbUrl);

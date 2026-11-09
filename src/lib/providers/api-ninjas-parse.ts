@@ -41,7 +41,7 @@ export function parseIngredientString(raw: string): ProviderIngredient {
   const match = MEASURE_PATTERN.exec(text);
   if (match) {
     const quantity = match[1].trim();
-    // Only absorb a trailing word when we recognise it as a unit, so
+    // Only absorb a trailing word when we recognize it as a unit, so
     // "2 Lemons" keeps the word "Lemons".
     const unitMatch = /[a-zA-Z.]+$/.exec(quantity);
     const unit = unitMatch ? unitMatch[0].replace(/\.$/, "").toLowerCase() : "";

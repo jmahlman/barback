@@ -13,7 +13,7 @@ next-env.d.ts
 *.tsbuildinfo
 src/generated/
 # Only the SQLite database and uploads at the repository root. An unanchored
-# "data/" would also swallow src/data/, which holds the generated licence
+# "data/" would also swallow src/data/, which holds the generated license
 # list the app imports.
 /data/
 *.db

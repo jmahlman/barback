@@ -387,7 +387,7 @@ export function RecipeForm({
             onChange={(e) => setIsFavorite(e.target.checked)}
             className="size-4 accent-brass-400"
           />
-          Favourite
+          Favorite
         </label>
       </div>
 

@@ -42,7 +42,7 @@ describe("cleanTitle", () => {
     });
   });
 
-  test("normalises litres", () => {
+  test("normalizes litres", () => {
     assert.deepEqual(cleanTitle("Hendrick's Gin 1.75L"), {
       name: "Hendrick's Gin",
       size: "1.75 L",
@@ -53,7 +53,7 @@ describe("cleanTitle", () => {
     });
   });
 
-  test("normalises fluid ounces", () => {
+  test("normalizes fluid ounces", () => {
     assert.deepEqual(cleanTitle("Fever-Tree Premium Indian Tonic Water 6.8 fl oz"), {
       name: "Fever-Tree Premium Indian Tonic Water",
       size: "6.8 fl oz",

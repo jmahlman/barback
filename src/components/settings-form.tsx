@@ -18,7 +18,7 @@ export interface ProviderView {
     stableIds: boolean;
     multiIngredientFilter: boolean;
     resultLimit: number | null;
-    catalogue: boolean;
+    catalog: boolean;
   };
   /** Masked form of the stored key, empty when none. */
   maskedKey: string;

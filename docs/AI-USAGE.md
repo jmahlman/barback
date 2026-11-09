@@ -9,7 +9,7 @@ here is the long answer. The short one lives in the
 Barback contains no AI.
 
 - No model, SDK or AI service appears in `package.json`. The full dependency
-  list, with versions and licences, is in the app under
+  list, with versions and licenses, is in the app under
   **Settings → Open source** and is regenerated from `node_modules` on every
   build.
 - There are no inference calls anywhere in `src/`.
@@ -33,9 +33,9 @@ README and this file were all written by it.
 
 The owner's part was deciding, not typing: what to build, what it should feel
 like, which cocktail services to use, how authentication should work, the
-licence, and which third-party assets to accept. Several times those
+license, and which third-party assets to accept. Several times those
 decisions reversed an earlier direction — social login was built and then
-removed in favour of reverse-proxy authentication, and the licence moved from
+removed in favour of reverse-proxy authentication, and the license moved from
 "no commercial use" to AGPL-3.0 after discussion.
 
 ## What gated it
@@ -49,7 +49,7 @@ Honestly, less than a mature project would have.
   someone and confirming their session actually died.
 - The ingredient matcher checked against hand-written expectations, and the
   API Ninjas measure parser checked against twenty real API responses.
-- Decisions with consequences — dependencies, external URLs, the licence,
+- Decisions with consequences — dependencies, external URLs, the license,
   the font and photograph — were put to the owner rather than assumed.
 
 ## What did not gate it
@@ -83,8 +83,8 @@ been quiet in production.
   it, so it was always false and the guard it protected did nothing.
 - **A masked API key was sent to people who should not have had it.** The
   settings page hid it in the UI but still passed it as a prop, so it
-  travelled to the browser anyway.
-- **A tequila became a sweetener.** Ingredient normalisation collapsed
+  traveled to the browser anyway.
+- **A tequila became a sweetener.** Ingredient normalization collapsed
   "tequila 100% agave" to "agave syrup", which would have quietly produced
   wrong answers about what you can make.
 - **A gitignore rule swallowed a generated file.** An unanchored `data/`

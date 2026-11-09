@@ -111,7 +111,7 @@ model InventoryItem {
 
   /// Display name, e.g. "Beefeater London Dry Gin".
   name     String
-  /// Normalised match key, e.g. "gin". Drives recipe matching.
+  /// Normalized match key, e.g. "gin". Drives recipe matching.
   slug     String
   /// One of the CATEGORIES values in src/lib/categories.ts.
   category String  @default("other")
@@ -121,7 +121,7 @@ model InventoryItem {
   quantity String?
   abv      Float?
 
-  /// Barcode, normalised to 13 digits for EAN-13/UPC-A (8 for EAN-8/UPC-E).
+  /// Barcode, normalized to 13 digits for EAN-13/UPC-A (8 for EAN-8/UPC-E).
   /// Set by the scanner, or typed in by hand. Deliberately not unique: two
   /// accounts can legitimately own the same bottle.
   upc String?
@@ -196,7 +196,7 @@ model RecipeIngredient {
 
   /// As written on the card, e.g. "Fresh lime juice".
   name     String
-  /// Normalised match key, e.g. "lime juice".
+  /// Normalized match key, e.g. "lime juice".
   slug     String
   amount   String?
   unit     String?
@@ -268,7 +268,7 @@ model CachedDrink {
 /// Not scoped to a user. A barcode means the same thing for everyone, so this
 /// is a response cache like CachedDrink, not user data.
 model CachedProduct {
-  /// Normalised barcode: 13 digits for EAN-13/UPC-A, 8 for EAN-8/UPC-E.
+  /// Normalized barcode: 13 digits for EAN-13/UPC-A, 8 for EAN-8/UPC-E.
   code String @id
 
   /// False when the service answered but had no such product.
