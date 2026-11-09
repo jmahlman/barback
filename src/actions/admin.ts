@@ -51,7 +51,8 @@ const createSchema = z.object({
   name: z.string().trim().min(1, "Give them a name.").max(80),
   username: z.string().trim().min(1, "Pick a username for them."),
   email: z.string().trim().toLowerCase().optional(),
-  // Blank means "no password": they sign in with a social provider instead.
+  // Blank means "no password": in local mode they cannot sign in until an
+  // admin sets one, and behind a proxy they never need one.
   password: z
     .string()
     .optional()
@@ -101,10 +102,10 @@ export async function createUserAccount(formData: FormData): Promise<ActionResul
   const clash = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (clash) return { ok: false, error: `${email} already has an account.` };
 
-  // With no password, store an unguessable one nobody is given. The account
-  // is reachable by signing in with a matching social provider, and the owner
+  // With no password, store an unguessable one nobody is ever given: the
+  // account exists for a reverse proxy to authenticate against, and the owner
   // can set a real password later.
-  const socialOnly = !password;
+  const withoutPassword = !password;
   const effectivePassword = password ?? randomBytes(32).toString("base64url");
 
   try {
@@ -130,7 +131,7 @@ export async function createUserAccount(formData: FormData): Promise<ActionResul
     });
   }
 
-  if (socialOnly) {
+  if (withoutPassword) {
     // createUser always writes a credential record. Leaving the throwaway
     // password in place would show this account as having password sign-in
     // when nobody can actually use it, so drop it. Setting a password later
@@ -149,8 +150,12 @@ export async function createUserAccount(formData: FormData): Promise<ActionResul
   revalidatePath("/admin");
   return {
     ok: true,
-    error: socialOnly
-      ? `${username.value} created with no password. They sign in through your reverse proxy.`
+    error: withoutPassword
+      ? (await isLocalAuth())
+        // In local mode a passwordless account cannot sign in at all, so say
+        // so rather than pointing at a proxy that is not there.
+        ? `${username.value} created with no password, so they cannot sign in yet. Set one from this page.`
+        : `${username.value} created with no password. They sign in through your reverse proxy.`
       : `${username.value} created. They can sign in with that username or their email.`,
   };
 }
@@ -226,7 +231,7 @@ export async function setUserPassword(
   revalidatePath("/admin");
   return {
     ok: true,
-    error: "Password set. Their social logins are unaffected.",
+    error: "Password set.",
   };
 }
 
@@ -259,7 +264,7 @@ export async function setUserBanned(
   return {
     ok: true,
     error: banned
-      ? "Suspended. They cannot sign in by password or social login."
+      ? "Suspended. They cannot sign in, however they reach Barback."
       : "Reinstated.",
   };
 }

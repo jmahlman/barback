@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
     "/**": [
       "./src/generated/prisma/**/*",
       "./node_modules/better-sqlite3/build/Release/*.node",
+      // The barcode decoder, streamed by /api/scanner/wasm so that scanning
+      // never reaches out to a CDN. Tracing cannot see it: the route resolves
+      // the path at request time.
+      "./node_modules/zxing-wasm/dist/reader/zxing_reader.wasm",
     ],
   },
   // Not setting `devIndicators: false` on purpose. It hides the floating
@@ -24,9 +28,14 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // Server Actions receive multipart uploads for recipe photos.
+    // Server Actions receive multipart uploads for recipe photos. Kept above
+    // the limit enforced in src/lib/uploads.ts: past this number the request
+    // is refused by the framework before any of Barback's code runs, so the
+    // person gets an error page instead of a sentence telling them what to
+    // do. The browser shrinks pictures before sending, so neither limit
+    // should be reachable in normal use.
     serverActions: {
-      bodySizeLimit: "8mb",
+      bodySizeLimit: "12mb",
     },
   },
 };

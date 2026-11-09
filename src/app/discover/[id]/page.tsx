@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { Metadata } from "next";
 import { AppShell, PageBody, PageHeader } from "@/components/app-shell";
 import { MakeableBadge } from "@/components/recipe-card";
@@ -7,7 +6,7 @@ import { AddMissingButton } from "@/components/recipe-detail-actions";
 import { EmptyState } from "@/components/empty-state";
 import { FetchDrinkButton } from "@/components/fetch-drink-button";
 import { CheckIcon, GlassIcon, SparkIcon, XIcon } from "@/components/icons";
-import { drinkImage } from "@/lib/providers/images";
+import { drinkImage, MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
 import { getCachedDrink } from "@/lib/providers/cache";
 import { getProvider, isProviderId } from "@/lib/providers/registry";
 import { parseDrinkKey } from "@/lib/providers/types";
@@ -15,6 +14,7 @@ import { evaluateRecipe } from "@/lib/matching";
 import { loadInventoryIndex } from "@/lib/recipe-queries";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { PhotoViewer } from "@/components/photo-viewer";
 
 export async function generateMetadata({
   params,
@@ -75,7 +75,10 @@ export default async function DiscoverDetailPage({
     inventory,
   );
 
-  const image = drinkImage(drink.thumbUrl, "large");
+  const image = drinkImage(drink.thumbUrl);
+  // Enlarging is an explicit request, so it gets the provider's original
+  // rather than the capped copy the page draws.
+  const fullImage = drink.thumbUrl?.trim() || image;
   const missingNames = evaluation.missing.map((m) => m.name);
 
   return (
@@ -85,14 +88,25 @@ export default async function DiscoverDetailPage({
         subtitle={[drink.category, drink.alcoholic].filter(Boolean).join(" · ") || undefined}
       />
       <PageBody>
+        {/* Capped rather than full-bleed: provider artwork is a decorative
+            square, and at full width it pushed the recipe itself off the
+            screen on a phone. */}
         {image ? (
-          <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-card)] border border-bar-800 bg-bar-900">
-            <Image
+          <div className="w-full" style={{ maxWidth: MAX_DRINK_IMAGE_PX }}>
+            <PhotoViewer
               src={image}
+              fullSrc={fullImage ?? image}
               alt={drink.name}
-              fill
-              sizes="(min-width: 768px) 640px, 100vw"
-              className="object-cover"
+              className="aspect-square w-full overflow-hidden rounded-[var(--radius-card)] border border-bar-800 bg-bar-900"
+              sizes={`${MAX_DRINK_IMAGE_PX}px`}
+              // Let Next fetch and re-serve the provider's picture, so the
+              // browser never talks to them directly.
+              unoptimized={false}
+              // TheCocktailDB's originals are 700px square. Both numbers are
+              // needed: one decides which variant is fetched, the other how
+              // large it is allowed to be drawn.
+              fullSizes="(min-width: 768px) 700px, 100vw"
+              fullMaxPx={700}
               priority
             />
           </div>

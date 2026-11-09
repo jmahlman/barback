@@ -121,7 +121,9 @@ model InventoryItem {
   quantity String?
   abv      Float?
 
-  /// Reserved for barcode scanning. Unused today, indexed for later lookups.
+  /// Barcode, normalised to 13 digits for EAN-13/UPC-A (8 for EAN-8/UPC-E).
+  /// Set by the scanner, or typed in by hand. Deliberately not unique: two
+  /// accounts can legitimately own the same bottle.
   upc String?
 
   notes   String?
@@ -132,7 +134,7 @@ model InventoryItem {
 
   @@unique([userId, slug])
   @@index([userId, category])
-  @@index([upc])
+  @@index([userId, upc])
   @@map("inventory_item")
 }
 
@@ -158,6 +160,10 @@ model Recipe {
 
   /// Relative path under UPLOAD_DIR, served via /api/uploads/<path>.
   imagePath String?
+  /// True when the photo came from the provider this recipe was imported
+  /// from, rather than being one the owner took. Drives the credit line, and
+  /// is cleared the moment they replace or remove the picture.
+  imageFromSource Boolean @default(false)
 
   /// Provenance when imported from a cocktail provider.
   sourceName     String?
@@ -252,6 +258,42 @@ model CachedDrink {
   @@index([slug])
   @@index([provider])
   @@map("cached_drink")
+}
+
+/// Barcode lookups, including the ones that found nothing. The free UPCitemdb
+/// tier allows 100 requests a day for a whole instance, so a miss is worth
+/// remembering as much as a hit: spirits coverage is patchy, and without this
+/// a rescan of the same unknown bottle spends the quota to learn nothing.
+///
+/// Not scoped to a user. A barcode means the same thing for everyone, so this
+/// is a response cache like CachedDrink, not user data.
+model CachedProduct {
+  /// Normalised barcode: 13 digits for EAN-13/UPC-A, 8 for EAN-8/UPC-E.
+  code String @id
+
+  /// False when the service answered but had no such product.
+  found Boolean @default(true)
+
+  title       String?
+  brand       String?
+  /// As reported, e.g. "750 ml".
+  size        String?
+  /// The service's own category string, kept for reference. Barback guesses
+  /// the shelf from the ingredient slug instead; see lib/products/classify.ts.
+  category    String?
+  description String?
+  imageUrl    String?
+
+  /// Which service answered, e.g. "upcitemdb".
+  source String
+  /// The matching item verbatim, so the title-cleanup rules can be improved
+  /// later by reprocessing locally instead of spending the quota again.
+  raw String?
+
+  fetchedAt DateTime @default(now())
+
+  @@index([found])
+  @@map("cached_product")
 }
 
 /// Cached result of a provider query, e.g. key "cocktaildb~i~gin".

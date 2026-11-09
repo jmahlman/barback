@@ -79,7 +79,16 @@ export async function createInventoryItem(formData: FormData): Promise<ActionRes
     // Re-adding something you already track just puts it back in stock.
     await db.inventoryItem.update({
       where: { id: existing.id },
-      data: { inStock: true, name: data.name, category: data.category },
+      data: {
+        inStock: true,
+        name: data.name,
+        category: data.category,
+        // A scan that lands on a bottle added by hand teaches it its barcode,
+        // so the next scan of it never has to leave the building. An existing
+        // barcode wins: it was either scanned off the bottle or typed in
+        // deliberately.
+        upc: existing.upc ?? (data.upc || null),
+      },
     });
     revalidatePath("/inventory");
     revalidatePath("/");

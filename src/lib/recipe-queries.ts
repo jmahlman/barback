@@ -57,7 +57,9 @@ export async function loadRecipesWithMakeability(userId: string): Promise<Recipe
     id: recipe.id,
     name: recipe.name,
     description: recipe.description,
-    imageUrl: uploadUrl(recipe.imagePath),
+    // Cards draw an 80px square, so they are served a 160px copy rather than
+    // the whole photograph.
+    imageUrl: uploadUrl(recipe.imagePath, 160),
     rating: recipe.rating,
     isFavorite: recipe.isFavorite,
     ingredientCount: recipe.ingredients.length,

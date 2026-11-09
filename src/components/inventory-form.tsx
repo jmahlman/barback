@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { CATEGORIES } from "@/lib/categories";
+import { isKnownBase, prettifyIngredient, slugifyIngredient } from "@/lib/ingredients";
 import { BarcodeIcon } from "@/components/icons";
 import type { ActionResult } from "@/actions/inventory";
 
@@ -23,18 +24,37 @@ export function InventoryForm({
   action,
   onDone,
   submitLabel = "Save",
+  scanSlot,
+  notice,
+  defaultAdvancedOpen = false,
 }: {
   initial?: InventoryFormValues;
   action: (formData: FormData) => Promise<ActionResult>;
   onDone?: () => void;
   submitLabel?: string;
+  /** Rendered above the name field; the barcode scanner goes here. */
+  scanSlot?: React.ReactNode;
+  /** Explanation of how the form came to be filled in the way it is. */
+  notice?: string | null;
+  /** Open the brand/barcode/matching disclosure from the start. */
+  defaultAdvancedOpen?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(defaultAdvancedOpen);
+  // Tracked only to preview what the name will match as. The inputs stay
+  // uncontrolled; making the whole form controlled to show a hint would be a
+  // much bigger change for no gain.
+  const [nameDraft, setNameDraft] = useState(initial?.name ?? "");
+  const [matchDraft, setMatchDraft] = useState(initial?.slug ?? "");
 
   const fieldError = (name: string) => result?.fieldErrors?.[name];
+
+  // What recipes will actually look for. Mirrors the server, which derives
+  // the key from the name whenever the field is left blank.
+  const derived = (matchDraft.trim() || slugifyIngredient(nameDraft)).trim();
+  const derivedKnown = derived ? isKnownBase(derived) : false;
 
   return (
     <form
@@ -50,6 +70,14 @@ export function InventoryForm({
       }}
       className="space-y-4"
     >
+      {scanSlot}
+
+      {notice ? (
+        <p className="rounded-xl border border-brass-700/50 bg-brass-900/20 p-3 text-sm text-brass-200">
+          {notice}
+        </p>
+      ) : null}
+
       <div>
         <label className="label" htmlFor="name">
           What is it?
@@ -59,6 +87,7 @@ export function InventoryForm({
           name="name"
           required
           defaultValue={initial?.name ?? ""}
+          onChange={(event) => setNameDraft(event.target.value)}
           className="field"
           placeholder="Beefeater London Dry Gin"
           autoComplete="off"
@@ -168,14 +197,28 @@ export function InventoryForm({
               id="matchAs"
               name="matchAs"
               defaultValue={initial?.slug ?? ""}
+              onChange={(event) => setMatchDraft(event.target.value)}
               className="field"
               placeholder="gin"
               autoComplete="off"
             />
-            <p className="mt-1 text-xs text-bar-400">
-              Leave blank to derive it from the name. Set it when a bottle should
-              stand in for a generic ingredient.
-            </p>
+            {derived && derivedKnown ? (
+              <p className="mt-1 text-xs text-bar-400">
+                Will match recipes asking for{" "}
+                <span className="text-citrus-400">{prettifyIngredient(derived)}</span>.
+              </p>
+            ) : derived ? (
+              <p className="mt-1 text-xs text-brass-300">
+                Barback can&apos;t tell what this is, so recipes won&apos;t match
+                it until you set a match key here — the generic ingredient it
+                stands in for, like <span className="font-medium">amaro</span>.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-bar-400">
+                Leave blank to derive it from the name. Set it when a bottle
+                should stand in for a generic ingredient.
+              </p>
+            )}
           </div>
 
           <div>
@@ -195,7 +238,7 @@ export function InventoryForm({
               autoComplete="off"
             />
             <p className="mt-1 text-xs text-bar-400">
-              Stored for later — barcode scanning is not wired up yet.
+              Saved with the bottle, so scanning it again is a one-tap restock.
             </p>
           </div>
         </div>

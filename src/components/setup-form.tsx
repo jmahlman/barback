@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { completeSetup } from "@/actions/setup";
 import type { ActionResult } from "@/actions/inventory";
+import { PasswordField } from "@/components/password-field";
 
 export function SetupForm({ authMode }: { authMode: string }) {
   const router = useRouter();
@@ -94,14 +95,12 @@ export function SetupForm({ authMode }: { authMode: string }) {
         <label className="label" htmlFor="password">
           Password
         </label>
-        <input
+        <PasswordField
           id="password"
           name="password"
-          type="password"
           required
           minLength={8}
           autoComplete="new-password"
-          className="field"
           placeholder="At least 8 characters"
         />
         {fieldError("password") ? (
@@ -113,14 +112,12 @@ export function SetupForm({ authMode }: { authMode: string }) {
         <label className="label" htmlFor="confirm">
           Confirm password
         </label>
-        <input
+        <PasswordField
           id="confirm"
           name="confirm"
-          type="password"
           required
           minLength={8}
           autoComplete="new-password"
-          className="field"
           placeholder="Type it again"
         />
         {fieldError("confirm") ? (

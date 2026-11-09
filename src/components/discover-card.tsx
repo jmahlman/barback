@@ -7,7 +7,7 @@ import type { DiscoverEntry } from "@/lib/discover";
 
 export function DiscoverCard({ entry }: { entry: DiscoverEntry }) {
   const { drink, evaluation, imported } = entry;
-  const image = drinkImage(drink.thumbUrl, "small");
+  const image = drinkImage(drink.thumbUrl, 80);
   const metadata = [drink.category, drink.alcoholic, drink.glass]
     .filter(Boolean)
     .join(" · ");

@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 
 /**
  * The instance owner holds the "admin" role, granted to the first account
- * created here. That covers accounts made with a password and accounts made
- * by signing in with GitHub, Google or Apple.
+ * created here. That covers an account made with a password and one created
+ * from a reverse proxy's headers the first time it saw that person.
  *
  * The earliest account is still honoured as a fallback, so an instance whose
  * roles were never written stays manageable.

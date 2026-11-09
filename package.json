@@ -1,6 +1,6 @@
 {
   "name": "barback",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Self-hosted home bartender companion: inventory, recipe book, and what-can-I-make discovery.",
   "license": "AGPL-3.0-or-later",
@@ -32,6 +32,7 @@
     "@better-auth/prisma-adapter": "1.7.18",
     "@prisma/adapter-better-sqlite3": "7.10.1",
     "@prisma/client": "7.10.1",
+    "barcode-detector": "3.2.3",
     "better-auth": "1.7.18",
     "next": "16.4.5",
     "prisma": "7.10.1",
@@ -40,6 +41,7 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
+    "sharp": "0.35.5",
     "zod": "4.6.7"
   },
   "devDependencies": {

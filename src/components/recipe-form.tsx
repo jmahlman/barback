@@ -7,6 +7,7 @@ import { METHODS } from "@/lib/categories";
 import { CameraIcon, PlusIcon, XIcon } from "@/components/icons";
 import { RatingInput } from "@/components/rating-input";
 import type { ActionResult } from "@/actions/inventory";
+import { downscaleImage } from "@/lib/image-resize";
 
 interface IngredientRow {
   key: string;
@@ -72,6 +73,7 @@ export function RecipeForm({
   const [isFavorite, setIsFavorite] = useState(initial?.isFavorite ?? false);
   const [imagePreview, setImagePreview] = useState<string | null>(initial?.imageUrl ?? null);
   const [removeImage, setRemoveImage] = useState(false);
+  const [shrinking, setShrinking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fieldError = (name: string) => result?.fieldErrors?.[name];
@@ -150,11 +152,30 @@ export function RecipeForm({
                 if (!file) return;
                 setImagePreview(URL.createObjectURL(file));
                 setRemoveImage(false);
+
+                // Shrink before the form is ever submitted. A photo straight
+                // off a phone is routinely several megabytes, which is slow
+                // to send and can exceed what a server action will accept —
+                // and that failure happens too early for Barback to explain
+                // itself. The resized file is put back on the input so the
+                // ordinary form submission carries it.
+                setShrinking(true);
+                void downscaleImage(file)
+                  .then((smaller) => {
+                    if (smaller === file || !fileRef.current) return;
+                    const transfer = new DataTransfer();
+                    transfer.items.add(smaller);
+                    fileRef.current.files = transfer.files;
+                  })
+                  .finally(() => setShrinking(false));
               }}
               className="block w-full text-sm text-bar-400
                 file:mr-3 file:rounded-lg file:border-0 file:bg-bar-800
                 file:px-3 file:py-2 file:text-sm file:text-bar-200"
             />
+            {shrinking ? (
+              <p className="text-xs text-bar-400">Resizing the photo…</p>
+            ) : null}
             {imagePreview ? (
               <button
                 type="button"
@@ -374,8 +395,14 @@ export function RecipeForm({
       ) : null}
 
       <div className="flex gap-2 pb-2">
-        <button type="submit" disabled={pending} className="btn-primary flex-1">
-          {pending ? "Saving…" : submitLabel}
+        {/* Held while the photo is being resized: submitting first would
+            send the original, which is the thing this avoids. */}
+        <button
+          type="submit"
+          disabled={pending || shrinking}
+          className="btn-primary flex-1"
+        >
+          {pending ? "Saving…" : shrinking ? "Resizing the photo…" : submitLabel}
         </button>
         <button
           type="button"

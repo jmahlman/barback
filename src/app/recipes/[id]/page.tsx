@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -18,6 +17,8 @@ import { evaluateRecipe } from "@/lib/matching";
 import { loadInventoryIndex } from "@/lib/recipe-queries";
 import { requireUser } from "@/lib/session";
 import { uploadUrl } from "@/lib/uploads";
+import { MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
+import { PhotoViewer } from "@/components/photo-viewer";
 
 async function loadRecipe(userId: string, id: string) {
   return db.recipe.findFirst({
@@ -68,7 +69,10 @@ export default async function RecipePage({
     inventory,
   );
 
-  const imageUrl = uploadUrl(recipe.imagePath);
+  // The page loads a display-sized copy; the full picture is fetched only if
+  // someone opens it.
+  const imageUrl = uploadUrl(recipe.imagePath, 640);
+  const fullImageUrl = uploadUrl(recipe.imagePath);
   const missingNames = [...evaluation.missing, ...evaluation.missingOptional].map((m) => m.name);
 
   return (
@@ -92,14 +96,27 @@ export default async function RecipePage({
 
       <PageBody>
         {imageUrl ? (
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-card)] border border-bar-800 bg-bar-900">
-            <Image
+          /* A photograph you took fills the width; a provider's square is
+             shown at the size it actually is, since stretching 300px across a
+             phone only makes it soft. */
+          <div
+            className="w-full"
+            style={
+              recipe.imageFromSource ? { maxWidth: MAX_DRINK_IMAGE_PX } : undefined
+            }
+          >
+            <PhotoViewer
               src={imageUrl}
+              fullSrc={fullImageUrl ?? imageUrl}
               alt={recipe.name}
-              fill
-              sizes="(min-width: 768px) 640px, 100vw"
-              className="object-cover"
-              unoptimized
+              className={`w-full overflow-hidden rounded-[var(--radius-card)] border border-bar-800 bg-bar-900 ${
+                recipe.imageFromSource ? "aspect-square" : "aspect-[4/3]"
+              }`}
+              sizes={
+                recipe.imageFromSource
+                  ? `${MAX_DRINK_IMAGE_PX}px`
+                  : "(min-width: 768px) 640px, 100vw"
+              }
               priority
             />
           </div>
@@ -220,7 +237,9 @@ export default async function RecipePage({
             >
               {recipe.sourceName ?? "the source"}
             </a>
-            .
+            {recipe.imageFromSource && recipe.imagePath
+              ? ", photograph and all — saved here, so it stays put. Add your own picture and this one makes way for it."
+              : "."}
           </p>
         ) : null}
 

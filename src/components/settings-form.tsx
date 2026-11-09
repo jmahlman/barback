@@ -7,6 +7,7 @@ import { clearCocktailCache, testProvider } from "@/actions/discover";
 import { CheckIcon, SparkIcon, TrashIcon, XIcon } from "@/components/icons";
 import { ConfirmButton } from "@/components/confirm-button";
 import type { ActionResult } from "@/actions/inventory";
+import { PasswordField } from "@/components/password-field";
 
 export interface ProviderView {
   id: string;
@@ -17,6 +18,7 @@ export interface ProviderView {
     stableIds: boolean;
     multiIngredientFilter: boolean;
     resultLimit: number | null;
+    catalogue: boolean;
   };
   /** Masked form of the stored key, empty when none. */
   maskedKey: string;
@@ -189,11 +191,11 @@ export function SettingsForm({
                 </a>
               </div>
 
-              <input
+              <PasswordField
                 id={provider.keyField}
                 name={provider.keyField}
-                type="password"
                 autoComplete="off"
+                reveals="key"
                 className="field font-mono"
                 placeholder={
                   provider.maskedKey

@@ -21,6 +21,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import type { ActionResult } from "@/actions/inventory";
+import { PasswordField } from "@/components/password-field";
 
 export interface AdminUserView {
   id: string;
@@ -42,11 +43,14 @@ export interface AdminUserView {
   recipeCount: number;
 }
 
+/**
+ * Barback signs people in with a password or through a reverse proxy, so
+ * "credential" is the only provider an account can have. The lookup and its
+ * fallback stay because the column is free text and an instance upgraded
+ * from an older build could still hold something else.
+ */
 const PROVIDER_LABELS: Record<string, string> = {
   credential: "Password",
-  github: "GitHub",
-  google: "Google",
-  apple: "Apple",
 };
 
 function providerLabel(id: string): string {
@@ -225,19 +229,21 @@ export function AdminUsers({
             <label className="label" htmlFor="new-password">
               Password <span className="font-normal text-bar-400">(optional)</span>
             </label>
-            <input
+            <PasswordField
               id="new-password"
               name="password"
-              type="password"
               minLength={8}
               autoComplete="new-password"
-              className="field"
-              placeholder="Leave blank for social login only"
+              placeholder={
+                canManagePasswords
+                  ? "At least 8 characters"
+                  : "Only useful for administrators"
+              }
             />
             <p className="mt-1 text-xs text-bar-400">
-              Leave this blank and they sign in with GitHub, Google or Apple
-              instead — as long as the provider reports this same email
-              address. You can set a password for them later.
+              {canManagePasswords
+                ? "Leave it blank and they will not be able to sign in until you set one, which you can do from this page at any time."
+                : "Your proxy signs people in, so an ordinary account here does not need a password. Only administrators can have one, for reaching Barback at its own address when the proxy is unavailable."}
             </p>
           </div>
           <div className="flex gap-2">
@@ -334,13 +340,11 @@ function EditPanel({
               Set a password
             </span>
           </label>
-          <input
+          <PasswordField
             id="set-password"
-            type="password"
             value={password}
             minLength={8}
             onChange={(e) => setPassword(e.target.value)}
-            className="field"
             placeholder="At least 8 characters"
             autoComplete="new-password"
           />

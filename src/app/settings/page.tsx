@@ -2,11 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AppShell, PageBody, PageHeader } from "@/components/app-shell";
 import { SettingsForm, type ProviderView } from "@/components/settings-form";
+import { BarcodeSettings, type BarcodeSettingsView } from "@/components/barcode-settings";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ChevronRightIcon } from "@/components/icons";
 import { isOwner } from "@/lib/owner";
 import { PROVIDER_LIST } from "@/lib/providers/registry";
 import { cachedCountsByProvider } from "@/lib/providers/cache";
+import { cachedProductCounts } from "@/lib/products/cache";
+import { readQuota, remainingLookups } from "@/lib/products/quota";
 import {
   getSetting,
   getSettingSource,
@@ -140,6 +143,32 @@ export default async function SettingsPage() {
     cachedCountsByProvider(),
   ]);
 
+  const [
+    barcodeEnabled,
+    upcitemdbKey,
+    upcitemdbSource,
+    productCounts,
+    quota,
+    remaining,
+  ] = await Promise.all([
+    getSetting(SETTING_KEYS.barcodeLookupEnabled),
+    getSetting(SETTING_KEYS.upcitemdbApiKey),
+    getSettingSource(SETTING_KEYS.upcitemdbApiKey),
+    cachedProductCounts(),
+    readQuota(),
+    remainingLookups(),
+  ]);
+
+  const barcode: BarcodeSettingsView = {
+    lookupEnabled: barcodeEnabled === "true",
+    // Only ever a masked form reaches the browser.
+    maskedKey: maskSecret(upcitemdbKey),
+    configured: Boolean(upcitemdbKey),
+    source: upcitemdbSource,
+    quota: { remaining, limit: quota.limit, resetAt: quota.resetAt },
+    cache: productCounts,
+  };
+
   const authModeOptions = buildModeOptions(mode);
 
   const providers: ProviderView[] = await Promise.all(
@@ -175,6 +204,10 @@ export default async function SettingsPage() {
         />
 
         <div className="border-t border-bar-800 pt-6">
+          <BarcodeSettings initial={barcode} />
+        </div>
+
+        <div className="border-t border-bar-800 pt-6">
           <AuthModeSettings
             current={mode}
             options={authModeOptions}
@@ -202,6 +235,20 @@ export default async function SettingsPage() {
               <span className="block text-xs text-bar-400">
                 Running {releaseState.current}. What changed in each version,
                 and whether there is a newer one.
+              </span>
+            </span>
+            <ChevronRightIcon className="size-5 shrink-0 text-bar-400" />
+          </Link>
+
+          <Link
+            href="/settings/data-sources"
+            className="card flex items-center justify-between gap-3 p-4 transition-colors hover:border-bar-700 hover:bg-bar-850"
+          >
+            <span>
+              <span className="block text-sm text-bar-200">Outside services</span>
+              <span className="block text-xs text-bar-400">
+                Barcode and cocktail lookups, and the update check. What each
+                one is told, and under whose terms.
               </span>
             </span>
             <ChevronRightIcon className="size-5 shrink-0 text-bar-400" />

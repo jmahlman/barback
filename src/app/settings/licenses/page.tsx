@@ -154,28 +154,29 @@ export default async function LicensesPage({
               </p>
             </li>
             <li className="space-y-1 p-3">
-              <p className="text-sm text-bar-200">Cocktail recipes and imagery</p>
+              <p className="text-sm text-bar-200">Barcode decoder</p>
               <p className="text-xs text-bar-400">
-                Supplied on request by{" "}
+                Barcodes are read on your own device by{" "}
                 <a
-                  href="https://www.thecocktaildb.com/"
+                  href="https://github.com/Sec-ant/barcode-detector"
                   target="_blank"
                   rel="noreferrer noopener"
                   className="text-brass-300 underline-offset-4 hover:underline"
                 >
-                  TheCocktailDB
+                  barcode-detector
                 </a>{" "}
                 and{" "}
                 <a
-                  href="https://api-ninjas.com/api/cocktail"
+                  href="https://github.com/zxing-cpp/zxing-cpp"
                   target="_blank"
                   rel="noreferrer noopener"
                   className="text-brass-300 underline-offset-4 hover:underline"
                 >
-                  API Ninjas
-                </a>
-                , subject to their own terms. Both free tiers are for
-                non-commercial use.
+                  zxing-cpp
+                </a>{" "}
+                compiled to WebAssembly, served by this instance rather than a
+                CDN. No image ever leaves your browser. Their licences are
+                listed below with every other package.
               </p>
             </li>
           </ul>

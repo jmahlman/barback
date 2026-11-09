@@ -187,3 +187,59 @@ export async function setSignupsAllowed(allowed: boolean): Promise<ActionResult>
       : "Account creation is closed. Add people from the People page instead.",
   };
 }
+
+
+// --- Barcode lookup --------------------------------------------------------
+
+/**
+ * Save the barcode lookup configuration.
+ *
+ * As with the provider keys, a key field left untouched arrives empty and is
+ * ignored, so toggling the switch never wipes a stored key.
+ */
+export async function saveBarcodeSettings(formData: FormData): Promise<ActionResult> {
+  const owner = await requireOwner();
+  if (!owner) {
+    return { ok: false, error: "Only the instance owner can change these settings." };
+  }
+
+  const parsed = z
+    .object({
+      lookupEnabled: z.boolean(),
+      upcitemdbApiKey: z.string().trim().max(200),
+    })
+    .safeParse({
+      lookupEnabled: formData.get("barcodeLookupEnabled") === "on",
+      upcitemdbApiKey: String(formData.get("upcitemdbApiKey") ?? ""),
+    });
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Those settings are invalid." };
+  }
+
+  await setSetting(
+    SETTING_KEYS.barcodeLookupEnabled,
+    parsed.data.lookupEnabled ? "true" : "false",
+  );
+  if (parsed.data.upcitemdbApiKey) {
+    await setSetting(SETTING_KEYS.upcitemdbApiKey, parsed.data.upcitemdbApiKey);
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/inventory");
+  return { ok: true, error: "Settings saved." };
+}
+
+/** Remove the stored UPCitemdb key, falling back to the keyless trial tier. */
+export async function clearUpcitemdbKey(): Promise<ActionResult> {
+  const owner = await requireOwner();
+  if (!owner) {
+    return { ok: false, error: "Only the instance owner can change these settings." };
+  }
+
+  await setSetting(SETTING_KEYS.upcitemdbApiKey, "");
+
+  revalidatePath("/settings");
+  revalidatePath("/inventory");
+  return { ok: true, error: "Key removed. Barcode lookups will use the free tier." };
+}

@@ -2,7 +2,12 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
-import { contentTypeFor, resolveUploadPath } from "@/lib/uploads";
+import {
+  contentTypeFor,
+  ensureThumbnail,
+  isThumbnailWidth,
+  resolveUploadPath,
+} from "@/lib/uploads";
 import { getSession } from "@/lib/session";
 
 /**
@@ -10,7 +15,7 @@ import { getSession } from "@/lib/session";
  * is nobody else's business.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const session = await getSession();
@@ -20,10 +25,20 @@ export async function GET(
 
   const { path: segments } = await params;
   const relative = segments.map(decodeURIComponent).join("/");
-  const resolved = resolveUploadPath(relative);
-  if (!resolved) {
+  const original = resolveUploadPath(relative);
+  if (!original) {
     return new NextResponse("Not found", { status: 404 });
   }
+
+  // `?w=` asks for one of the generated sizes. A card drawing an 80px square
+  // has no business downloading a 1600px photograph to do it. An unknown
+  // width, or one that cannot be produced, falls back to the original rather
+  // than failing.
+  const requested = Number(new URL(request.url).searchParams.get("w"));
+  const resolved =
+    Number.isFinite(requested) && isThumbnailWidth(requested)
+      ? ((await ensureThumbnail(relative, requested)) ?? original)
+      : original;
 
   let info;
   try {

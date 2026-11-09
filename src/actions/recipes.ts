@@ -8,8 +8,10 @@ import { slugifyIngredient } from "@/lib/ingredients";
 import {
   UploadError,
   deleteRecipeImage,
+  saveGeneratedImage,
   saveRecipeImage,
 } from "@/lib/uploads";
+import { fetchDrinkArtwork } from "@/lib/providers/artwork";
 import { getCachedDrink } from "@/lib/providers/cache";
 import { getProvider, isProviderId } from "@/lib/providers/registry";
 import type { ActionResult } from "@/actions/inventory";
@@ -174,7 +176,7 @@ export async function updateRecipe(
   const user = await requireUser();
   const existing = await db.recipe.findFirst({
     where: { id, userId: user.id },
-    select: { id: true, imagePath: true },
+    select: { id: true, imagePath: true, imageFromSource: true },
   });
   if (!existing) return { ok: false, error: "That recipe is no longer in your book." };
 
@@ -192,10 +194,15 @@ export async function updateRecipe(
   const removeImage = formData.get("removeImage") === "true";
   const image = formData.get("image");
 
+  // Once someone puts their own picture here — or takes one away — it is no
+  // longer the provider's, so the credit line goes with it.
+  let imageFromSource = existing.imageFromSource;
+
   if (image instanceof File && image.size > 0) {
     try {
       imagePath = await saveRecipeImage(image);
       await deleteRecipeImage(existing.imagePath);
+      imageFromSource = false;
     } catch (error) {
       const message =
         error instanceof UploadError ? error.message : "Could not save that image.";
@@ -204,6 +211,7 @@ export async function updateRecipe(
   } else if (removeImage) {
     await deleteRecipeImage(existing.imagePath);
     imagePath = null;
+    imageFromSource = false;
   }
 
   const slug = await uniqueRecipeSlug(user.id, data.name, id);
@@ -225,6 +233,7 @@ export async function updateRecipe(
         rating: data.rating,
         isFavorite: data.isFavorite,
         imagePath,
+        imageFromSource,
         ingredients: {
           create: data.ingredients.map((ingredient, index) => ({
             name: ingredient.name,
@@ -431,6 +440,29 @@ export async function importExternalRecipe(
     },
     select: { id: true },
   });
+
+  // The picture comes after the recipe exists, so a provider that is slow,
+  // unreachable or has reorganised its files costs you the photo and nothing
+  // else. Imported artwork is re-encoded to at most MAX_DRINK_IMAGE_PX square
+  // on the way in; uploads are served straight off disk without resizing.
+  const artwork = await fetchDrinkArtwork(drink.thumbUrl);
+  if (artwork) {
+    let written: string | null = null;
+    try {
+      written = await saveGeneratedImage(artwork.data, artwork.extension);
+      await db.recipe.update({
+        where: { id: recipe.id },
+        data: { imagePath: written, imageFromSource: true },
+      });
+    } catch (error) {
+      // Take the file back out if the recipe never learned about it, so a
+      // failure here does not leave something nothing points at.
+      await deleteRecipeImage(written);
+      // Keep the recipe; it simply has no photo. Logged rather than silent,
+      // because a picture that never appears looks like nothing happened.
+      console.warn(`[artwork] could not attach a photo to ${recipe.id}:`, error);
+    }
+  }
 
   revalidateRecipes(recipe.id);
   revalidatePath("/discover");

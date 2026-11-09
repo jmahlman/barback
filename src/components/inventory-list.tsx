@@ -10,6 +10,8 @@ import {
 } from "@/actions/inventory";
 import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { InventoryForm } from "@/components/inventory-form";
+import { BarcodeScanButton } from "@/components/barcode-scan-button";
+import type { ScannedValues } from "@/actions/barcode";
 import { Sheet } from "@/components/sheet";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -43,6 +45,29 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<InventoryItemView | null>(null);
   const [pending, startTransition] = useTransition();
+  /** What a scan established, and why the form looks the way it does. */
+  const [scanned, setScanned] = useState<{
+    values: Partial<ScannedValues> & { upc: string };
+    note: string | null;
+  } | null>(null);
+  // The form's inputs are uncontrolled, so handing it new values after it has
+  // mounted would do nothing. Bumping this remounts it, which is the right
+  // tool here and cheaper than making every field controlled.
+  const [formKey, setFormKey] = useState(0);
+
+  const openAddSheet = (
+    values: (Partial<ScannedValues> & { upc: string }) | null,
+    note: string | null,
+  ) => {
+    setScanned(values ? { values, note } : null);
+    setFormKey((n) => n + 1);
+    setAdding(true);
+  };
+
+  const openEditSheet = (id: string) => {
+    const item = items.find((candidate) => candidate.id === id);
+    if (item) setEditing(item);
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -81,15 +106,24 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
     <div className="space-y-4">
       {/* Search + filters */}
       <div className="space-y-3">
-        <div className="relative">
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-bar-400" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search your bar…"
-            aria-label="Search inventory"
-            className="field pl-10"
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-bar-400" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search your bar…"
+              aria-label="Search inventory"
+              className="field pl-10"
+            />
+          </div>
+          {/* Scanning from here is the restocking path: a bottle you already
+              track never has to open the add form at all. */}
+          <BarcodeScanButton
+            variant="icon"
+            onPrefill={(values, note) => openAddSheet(values, note)}
+            onEdit={openEditSheet}
           />
         </div>
 
@@ -128,7 +162,7 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
           title="Your bar is empty"
           body="Add the bottles, mixers and garnishes you keep around. Barback uses this to work out what you can make."
           action={
-            <button type="button" onClick={() => setAdding(true)} className="btn-primary">
+            <button type="button" onClick={() => openAddSheet(null, null)} className="btn-primary">
               <PlusIcon className="size-5" />
               Add your first bottle
             </button>
@@ -205,7 +239,7 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
       {/* Floating add button */}
       <button
         type="button"
-        onClick={() => setAdding(true)}
+        onClick={() => openAddSheet(null, null)}
         aria-label="Add to inventory"
         className="btn-primary fixed bottom-20 right-4 z-30 size-14 rounded-full shadow-lg
           shadow-black/40 md:bottom-6 md:right-6"
@@ -215,6 +249,31 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
 
       <Sheet open={adding} onClose={() => setAdding(false)} title="Add to your bar">
         <InventoryForm
+          key={formKey}
+          initial={
+            scanned
+              ? {
+                  name: scanned.values.name ?? "",
+                  category: scanned.values.category ?? "spirit",
+                  brand: scanned.values.brand ?? "",
+                  quantity: scanned.values.quantity ?? "",
+                  upc: scanned.values.upc,
+                  // Deliberately no slug: leaving "Match recipes as" blank
+                  // lets the server derive it from whatever name is finally
+                  // submitted, rather than from the one the scan guessed.
+                }
+              : undefined
+          }
+          notice={scanned?.note ?? null}
+          // After a scan, the two fields worth checking — the brand and what
+          // this will match as — are both inside the disclosure.
+          defaultAdvancedOpen={Boolean(scanned)}
+          scanSlot={
+            <BarcodeScanButton
+              onPrefill={(values, note) => openAddSheet(values, note)}
+              onEdit={openEditSheet}
+            />
+          }
           action={createInventoryItem}
           onDone={() => setAdding(false)}
           submitLabel="Add it"

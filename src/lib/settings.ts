@@ -20,6 +20,9 @@ export const SETTING_KEYS = {
   releaseCache: "updates.releaseCache",
   releaseCheckedAt: "updates.checkedAt",
   dismissedVersion: "updates.dismissedVersion",
+  barcodeLookupEnabled: "barcode.lookupEnabled",
+  upcitemdbApiKey: "upcitemdb.apiKey",
+  upcitemdbQuota: "upcitemdb.quota",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
@@ -35,6 +38,9 @@ const ENV_FALLBACK: Record<SettingKey, () => string | undefined> = {
   [SETTING_KEYS.releaseCache]: () => undefined,
   [SETTING_KEYS.releaseCheckedAt]: () => undefined,
   [SETTING_KEYS.dismissedVersion]: () => undefined,
+  [SETTING_KEYS.barcodeLookupEnabled]: () => process.env.BARCODE_LOOKUP,
+  [SETTING_KEYS.upcitemdbApiKey]: () => process.env.UPCITEMDB_API_KEY,
+  [SETTING_KEYS.upcitemdbQuota]: () => undefined,
 };
 
 const DEFAULTS: Record<SettingKey, string> = {
@@ -52,6 +58,15 @@ const DEFAULTS: Record<SettingKey, string> = {
   [SETTING_KEYS.releaseCache]: "",
   [SETTING_KEYS.releaseCheckedAt]: "",
   [SETTING_KEYS.dismissedVersion]: "",
+  // On, unlike the update check, because it only ever fires when someone
+  // presses Scan, and it sends a barcode and nothing else -- no key, no
+  // account, no inventory. Turning it off still leaves the scanner working:
+  // it fills the barcode in and you type the name yourself.
+  [SETTING_KEYS.barcodeLookupEnabled]: "true",
+  // Blank means UPCitemdb's keyless trial tier: 100 lookups a day, shared by
+  // everything behind your IP address. A key raises that ceiling.
+  [SETTING_KEYS.upcitemdbApiKey]: "",
+  [SETTING_KEYS.upcitemdbQuota]: "",
 };
 
 async function readStored(): Promise<Map<string, string>> {

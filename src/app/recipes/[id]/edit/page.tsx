@@ -38,7 +38,8 @@ export default async function EditRecipePage({
             garnish: recipe.garnish,
             rating: recipe.rating,
             isFavorite: recipe.isFavorite,
-            imageUrl: uploadUrl(recipe.imagePath),
+            // The form shows a 96px preview, not the whole picture.
+            imageUrl: uploadUrl(recipe.imagePath, 160),
             ingredients: recipe.ingredients.map((i) => ({
               name: i.name,
               amount: [i.amount, i.unit].filter(Boolean).join(" ") || null,

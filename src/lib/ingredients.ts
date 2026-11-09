@@ -346,6 +346,19 @@ export function slugifyIngredient(raw: string): string {
   return text;
 }
 
+/**
+ * Is this slug something recipes are actually likely to ask for?
+ *
+ * `slugifyIngredient` always returns something, but for an unrecognised name
+ * that something is the whole cleaned phrase, which will match no recipe. The
+ * inventory form uses this to warn that a bottle needs a match key set by
+ * hand -- most often after a barcode scan, since a machine-generated product
+ * title is far likelier to slugify badly than a name someone typed.
+ */
+export function isKnownBase(slug: string): boolean {
+  return KNOWN_BASES.has(slug);
+}
+
 /** Human-friendly display name for a slug. */
 export function prettifyIngredient(slug: string): string {
   return slug.replace(/\b\p{L}/gu, (c) => c.toUpperCase());

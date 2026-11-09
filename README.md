@@ -48,19 +48,27 @@ you can make tonight. Self-hosted, one container, no account anywhere else.
   - [Third-party code](#third-party-code)
   - [The photograph](#the-photograph)
   - [The wordmark typeface](#the-wordmark-typeface)
-  - [Cocktail data](#cocktail-data)
+  - [Outside services](#outside-services)
 - [Credits](#credits)
 
 ## What it does
 
 **Inventory** — Everything behind your bar: spirits, liqueurs, vermouth,
 bitters, syrups, juices, mixers, fresh ingredients and garnishes. Mark things
-in or out of stock with one tap. Each item has an optional barcode field,
-unused for now but ready for scanning later.
+in or out of stock with one tap. Scan a bottle's barcode with your phone to
+add it, or to put something you've just re-bought back in stock in one tap.
 
 **Recipe book** — Your own drinks, with ingredients, measures, instructions,
 glassware, method, garnish, notes, a photo and a rating. Dated tasting notes
 let you record what you'd change next time.
+
+**Photographs** — Take one, or let a saved cocktail bring its own. Pictures
+are shrunk in the browser before they are uploaded and resized again on the
+server, so a photo straight off a phone does not take an age to send or sit
+on your disk at full size. Saving a drink from Discover copies its picture
+into your own uploads folder rather than linking to it, so the recipe stays
+intact if the provider reorganises its files — and the page says where the
+photo came from until you put your own there. Tap any photo to see it larger.
 
 **What can I make** — Every recipe is checked against your inventory and
 labelled "you can make this" or "missing X". Optional ingredients and garnishes
@@ -93,11 +101,20 @@ when you press one of these:
 - **Look it up on …** on a drink that isn't saved yet
 - **Save to my book** when importing a drink
 - **Test connection** on the Settings page
+- **Scan a barcode** on Inventory, once a barcode has actually been read
+- **Test lookup** in Settings → Barcode lookup
 
 Everything fetched is cached in your own database, so afterwards Discover works
 entirely offline. Every outbound call is logged to the server output as
-`[cocktaildb] GET …` or `[apininjas] GET …`, so you can confirm this for
-yourself. Clear the cache from Discover or Settings.
+`[cocktaildb] GET …`, `[apininjas] GET …` or `[upcitemdb] GET …`, so you can
+confirm this for yourself. Clear the cache from Discover or Settings.
+
+Reading a barcode is not a lookup. The camera frames and the decoder stay in
+your browser — the decoder is served from Barback itself, not a CDN — so a
+scan only becomes a request when there is a barcode to ask about, and then it
+sends the digits and nothing else. Barcode lookups can be switched off
+entirely in Settings; the scanner still fills the barcode in, and you type the
+name yourself.
 
 Structurally, nothing that renders a page is allowed to import a provider;
 network calls live in `src/actions/` behind a button.
@@ -212,7 +229,20 @@ Set `BETTER_AUTH_URL` to the public URL, with no trailing slash:
 BETTER_AUTH_URL=https://bar.example.com
 ```
 
-Serve it over HTTPS. Session cookies are marked secure on https URLs.
+Serve it over HTTPS. Session cookies are marked secure on https URLs, and
+**barcode scanning needs it too**: browsers only open a camera on a secure
+page. `https://bar.example.com` is one, and so is `http://localhost:3000` on
+the machine itself — but `http://nas.local:3000` and `http://192.168.1.50:3000`
+are not, and no browser setting on a phone will make them one.
+
+Reaching Barback that way is not the end of scanning. It offers to decode a
+photo instead, which has no such restriction and uses your phone's own camera
+app, so you still get autofocus and the flash. It is one tap more than live
+scanning and reads the same barcode.
+
+If your proxy injects a Content-Security-Policy, the decoder needs
+`script-src 'wasm-unsafe-eval'`. Without it scanning fails with nothing but a
+console error to show for it.
 
 ### Your data
 
@@ -245,6 +275,8 @@ overrides it.
 | `COCKTAIL_PROVIDER_FALLBACK` | `false` | Try the other provider on failure |
 | `COCKTAILDB_API_KEY` | `1` | TheCocktailDB key |
 | `API_NINJAS_API_KEY` | — | API Ninjas key |
+| `BARCODE_LOOKUP` | `true` | `false` stops barcode lookups; scanning still works |
+| `UPCITEMDB_API_KEY` | — | Optional. Blank uses UPCitemdb's free tier |
 | `DATABASE_URL` | `file:/data/barback.db` | SQLite location |
 | `UPLOAD_DIR` | `/data/uploads` | Where photos are written |
 
@@ -362,7 +394,9 @@ server {
 
     include /config/nginx/ssl.conf;
 
-    # Recipe photos are up to 8 MB.
+    # Recipe photos. Barback shrinks them in the browser before sending, so
+    # an upload is normally well under a megabyte; this is headroom for the
+    # cases where it cannot.
     client_max_body_size 16M;
 
     # Authelia. Needed once per server block.
@@ -682,6 +716,15 @@ src/lib/providers/api-ninjas.ts   API Ninjas
 src/lib/providers/api-ninjas-parse.ts  Measure/name parsing (pure, testable)
 src/lib/providers/cache.ts     Caching shared by all providers
 src/lib/providers/registry.ts  Provider choice and fallback order
+src/lib/products/upc.ts        Barcode validation (pure, testable)
+src/lib/products/classify.ts   Product title -> name, size, shelf (pure)
+src/lib/products/upcitemdb.ts  UPCitemdb, the only file that fetches
+src/lib/products/cache.ts      Barcode lookups, hits and misses alike
+src/lib/products/quota.ts      What is left of the daily allowance
+src/lib/providers/artwork.ts   Fetching and shrinking a drink's picture
+src/lib/providers/images.ts    Picking a provider image size
+src/lib/image-resize.ts        Shrinking a photo in the browser, pre-upload
+src/lib/uploads.ts             Stored photos, resizing and thumbnails
 src/lib/discover.ts            Cache-only matching, plus the explicit scan
 src/actions/                   Server actions; the only callers of a provider
 src/app/                       Routes
@@ -724,7 +767,8 @@ to the internet.
 calls, no API keys for any AI service, no telemetry. Your inventory, your
 recipes, your photos and your tasting notes live in a SQLite file on your own
 disk and are never sent anywhere. The only outbound requests are the cocktail
-lookups you press a button for and the optional daily update check — see
+and barcode lookups you press a button for and the optional daily update
+check — see
 [API lookups only happen when you ask](#api-lookups-only-happen-when-you-ask).
 
 The longer version, including what gated the work, what did not, and the bugs
@@ -732,8 +776,6 @@ this approach produced, is in **[docs/AI-USAGE.md](docs/AI-USAGE.md)**.
 
 ## Not done yet
 
-- **Barcode scanning.** The UPC field and index exist; the camera flow and
-  product lookup don't.
 - **Sharing.** Everything is per-account and private; accounts cannot see each
   other's bars.
 - **Email.** No invitation emails or self-service password resets, because the
@@ -775,10 +817,11 @@ At the time of writing that is 232 packages: 165 MIT, 26 ISC, 25 Apache-2.0,
 and a handful of others. Two are worth knowing about specifically:
 
 - **`@img/sharp-libvips`** is LGPL-3.0-or-later and *is* included in the
-  runtime image. It is the libvips binary behind Next.js image optimisation,
-  shipped as a shared library, which is how practically every Next.js
-  deployment works. The licence text travels with it and is shown on the
-  licences page.
+  runtime image. It is the libvips binary behind `sharp`, which Barback uses
+  to resize photographs on upload and to make the smaller copies cards are
+  served, and which Next.js uses for its own image optimisation. It ships as
+  a shared library, which is how practically every Next.js deployment works.
+  The licence text travels with it and is shown on the licences page.
 - **`lightningcss`** (MPL-2.0), **`elkjs`** (EPL-2.0) and **`caniuse-lite`**
   (CC-BY-4.0) are build-time only and are not present in the runtime image.
 
@@ -823,13 +866,18 @@ Headings keep the serif stack: Retro Gastroll is a display face and would be
 hard work at body sizes. Swap it by replacing the file and the `@font-face`
 rule in `src/app/globals.css`.
 
-### Cocktail data
+### Outside services
 
 Recipes and imagery come from [TheCocktailDB](https://www.thecocktaildb.com/)
-and [API Ninjas](https://api-ninjas.com/api/cocktail) when you ask for them,
-and are cached in your own database. Both free tiers are for non-commercial
-use. Get a production key from whichever you use before putting an instance
-on the public internet.
+and [API Ninjas](https://api-ninjas.com/api/cocktail) when you ask for them.
+Product details for a scanned barcode come from
+[UPCitemdb](https://www.upcitemdb.com/). All of it is cached in your own
+database, and each service has its own terms — the free tiers are for
+non-commercial use. Get a production key from whichever you rely on before
+putting an instance on the public internet.
+
+None of them is ever told what is on your shelf. **Settings → Outside
+services** lists each one in the app, with what it is sent and when.
 
 ## Credits
 
@@ -837,10 +885,15 @@ Recipe data and imagery: [TheCocktailDB](https://www.thecocktaildb.com/) and
 [API Ninjas](https://api-ninjas.com/api/cocktail). Barback credits whichever
 providers are configured, on Discover and on each drink.
 
+Barcode product data: [UPCitemdb](https://www.upcitemdb.com/). Barcodes
+themselves are read on your own device by
+[barcode-detector](https://github.com/Sec-ant/barcode-detector) and
+[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp).
+
 Sign-in photograph by [Edgar Chaparro](https://unsplash.com/@echaparro) on
 Unsplash. Wordmark set in Retro Gastroll by
 [Arterfak Project](https://arterfakproject.com/).
 
-See [Licensing](#licensing) for the full picture, and
-**Settings → Open source** inside the app for every package and its licence
-text.
+See [Licensing](#licensing) for the full picture. Inside the app,
+**Settings → Outside services** lists every service Barback can contact, and
+**Settings → Open source licenses** every package and its licence text.

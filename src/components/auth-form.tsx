@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signUp } from "@/lib/auth-client";
 import { signInWithIdentifier } from "@/actions/sign-in";
+import { PasswordField } from "@/components/password-field";
 
 export function AuthForm({
   mode,
@@ -103,14 +104,12 @@ export function AuthForm({
           <label className="label" htmlFor="password">
             Password
           </label>
-          <input
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             required
             minLength={8}
             autoComplete={isSignUp ? "new-password" : "current-password"}
-            className="field"
             placeholder={isSignUp ? "At least 8 characters" : "••••••••"}
           />
         </div>

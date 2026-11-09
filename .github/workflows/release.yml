@@ -61,6 +61,21 @@ jobs:
             exit 1
           fi
 
+      # The release notes are not only a GitHub page: Barback reads them back
+      # and renders them under Settings -> Releases, so they are what someone
+      # deciding whether to update actually reads. A list of commit subjects
+      # does not tell them anything. Checked here, before two architectures
+      # get built, rather than at the end.
+      - name: Check the changelog has an entry for this version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          if ! ./scripts/changelog-section.sh "$VERSION" > /dev/null; then
+            echo "::error::CHANGELOG.md has no '## $VERSION' section."
+            echo "Add one describing what changed for the people running this." >&2
+            exit 1
+          fi
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -159,16 +174,27 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           PREVIOUS=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
 
+          VERSION="${{ steps.version.outputs.version }}"
+          CHANGELOG=$(./scripts/changelog-section.sh "$VERSION" || true)
+
           {
+            # What changed, in words, straight from CHANGELOG.md. The build
+            # already refused to get this far without it.
+            if [ -n "$CHANGELOG" ]; then
+              echo "$CHANGELOG"
+              echo
+            fi
+
+            # The commit list is supporting detail, below the prose. With no
+            # earlier tag there is nothing to list, and the changelog has
+            # already said what this is.
             if [ -n "$PREVIOUS" ]; then
-              echo "### What changed"
+              echo "### Commits"
               echo
               git log --no-merges --pretty='- %s' "$PREVIOUS..$TAG"
               echo
               echo "**Full diff:** https://github.com/${{ github.repository }}/compare/$PREVIOUS...$TAG"
-            else
-              echo "### First release"
-              echo
+            elif [ -z "$CHANGELOG" ]; then
               echo "Barback $TAG. See the README for what it does and how to run it."
             fi
 
