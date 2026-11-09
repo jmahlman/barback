@@ -15,7 +15,10 @@ notes, breaking changes, and decisions worth explaining.
 shelf you put something on now decides whether it can produce a garnish: a
 lime in Fresh & Perishable covers a recipe asking for a lime wedge, peel,
 wheel, zest or twist, and a carton of lime juice in Juices does not. You do
-not have to mark anything — the shelf you already chose carries it.
+not have to mark anything — the shelf you already chose carries it, and the
+add-a-bottle form now says so when you pick one of those shelves. The Juices
+hint used to read "Lime, lemon, orange", which invited exactly the wrong
+choice.
 
 Asking for a twist, a wedge or a slice used to be recorded as asking for the
 fruit's juice, because those words are also units of quantity ("1 twist of

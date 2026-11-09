@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, shelfNote } from "@/lib/categories";
 import { isKnownBase, prettifyIngredient, slugifyIngredient } from "@/lib/ingredients";
 import { BarcodeIcon } from "@/components/icons";
 import type { ActionResult } from "@/actions/inventory";
@@ -48,6 +48,8 @@ export function InventoryForm({
   // much bigger change for no gain.
   const [nameDraft, setNameDraft] = useState(initial?.name ?? "");
   const [matchDraft, setMatchDraft] = useState(initial?.slug ?? "");
+  // Tracked so the shelf's own note can follow the selection.
+  const [shelf, setShelf] = useState(initial?.category ?? "spirit");
 
   const fieldError = (name: string) => result?.fieldErrors?.[name];
 
@@ -105,6 +107,7 @@ export function InventoryForm({
           id="category"
           name="category"
           defaultValue={initial?.category ?? "spirit"}
+          onChange={(event) => setShelf(event.target.value)}
           className="field"
         >
           {CATEGORIES.map((c) => (
@@ -113,6 +116,16 @@ export function InventoryForm({
             </option>
           ))}
         </select>
+        {/* For most shelves this is just a reminder of what belongs there.
+            For fruit and juice it decides what recipes will match, so it is
+            worth saying out loud rather than leaving to be discovered. */}
+        {shelfNote(shelf) ? (
+          <p className="mt-1 text-xs text-brass-300">{shelfNote(shelf)}</p>
+        ) : (
+          <p className="mt-1 text-xs text-bar-400">
+            {CATEGORIES.find((c) => c.slug === shelf)?.hint}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

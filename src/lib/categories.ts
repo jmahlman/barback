@@ -5,13 +5,31 @@ export const CATEGORIES = [
   { slug: "vermouth", label: "Vermouth & Fortified", hint: "Sweet & dry vermouth, sherry, port" },
   { slug: "bitters", label: "Bitters", hint: "Angostura, Peychaud's, orange bitters" },
   { slug: "syrup", label: "Syrups & Sweeteners", hint: "Simple syrup, grenadine, honey, agave" },
-  { slug: "juice", label: "Juices", hint: "Lime, lemon, orange, pineapple" },
+  { slug: "juice", label: "Juices", hint: "Bottled or carton: lime, lemon, orange, pineapple" },
   { slug: "mixer", label: "Mixers", hint: "Soda, tonic, ginger beer, cola" },
-  { slug: "fresh", label: "Fresh & Perishable", hint: "Citrus, mint, cream, egg" },
-  { slug: "garnish", label: "Garnishes", hint: "Cherries, olives, peels, salt" },
+  { slug: "fresh", label: "Fresh & Perishable", hint: "Whole fruit, mint, cream, egg" },
+  { slug: "garnish", label: "Garnishes", hint: "Cherries, olives, salt, whole citrus" },
   { slug: "wine", label: "Wine & Beer", hint: "Prosecco, champagne, lager, stout" },
   { slug: "other", label: "Other", hint: "Anything else behind the bar" },
 ] as const;
+
+/**
+ * Shelves where the choice changes what a recipe will match, not just where
+ * the item appears on the page. A garnish has to come off the real thing.
+ */
+const SHELF_NOTES: Record<string, string> = {
+  fresh:
+    "Whole fruit belongs here. A lime on this shelf can become a wedge, a wheel, a peel or a twist.",
+  garnish:
+    "Whole fruit here works too. A lemon on this shelf can become a zest or a twist.",
+  juice:
+    "Bottled and carton juice belongs here. It covers a recipe calling for juice, but not for a wedge, a peel or a twist — those need the fruit, on Fresh & Perishable.",
+};
+
+export function shelfNote(slug: string | null | undefined): string | null {
+  if (!slug) return null;
+  return SHELF_NOTES[slug] ?? null;
+}
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
 
