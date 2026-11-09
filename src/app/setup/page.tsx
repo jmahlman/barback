@@ -68,7 +68,7 @@ export default async function SetupPage() {
           </p>
         ) : null}
 
-        <SetupForm authMode={mode} />
+        <SetupForm />
       </div>
     </AuthBackdrop>
   );

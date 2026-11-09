@@ -98,6 +98,7 @@ export function PhotoViewer({
         />
       </button>
 
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: the dialog closes on Esc and has a close button; this click only dismisses on the backdrop */}
       <dialog
         ref={ref}
         onCancel={(event) => {
@@ -114,6 +115,8 @@ export function PhotoViewer({
           backdrop:bg-black/90 backdrop:backdrop-blur-sm"
       >
         {open ? (
+          // biome-ignore lint/a11y/noStaticElementInteractions: the overlay is a pointer affordance; Esc and the close button are the keyboard paths
+          // biome-ignore lint/a11y/useKeyWithClickEvents: the dialog closes on Esc and has a close button; this click only dismisses on the backdrop
           <div
             className="flex h-full w-full items-center justify-center p-4"
             onClick={() => setOpen(false)}

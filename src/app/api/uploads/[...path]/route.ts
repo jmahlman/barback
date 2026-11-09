@@ -40,7 +40,7 @@ export async function GET(
       ? ((await ensureThumbnail(relative, requested)) ?? original)
       : original;
 
-  let info;
+  let info: Awaited<ReturnType<typeof stat>>;
   try {
     info = await stat(resolved);
   } catch {

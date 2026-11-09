@@ -112,7 +112,9 @@ export function BarcodeScanner({
       cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     }
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
     streamRef.current = null;
   }, []);
 
@@ -182,7 +184,9 @@ export function BarcodeScanner({
 
     const video = videoRef.current;
     if (!video) {
-      stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((t) => {
+        t.stop();
+      });
       return;
     }
 

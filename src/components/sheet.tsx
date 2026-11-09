@@ -38,6 +38,7 @@ export function Sheet({
   }, [open]);
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: the dialog closes on Esc and has a close button; this click only dismisses on the backdrop
     <dialog
       ref={ref}
       onCancel={(event) => {

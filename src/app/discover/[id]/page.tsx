@@ -8,7 +8,7 @@ import { FetchDrinkButton } from "@/components/fetch-drink-button";
 import { CheckIcon, GlassIcon, SparkIcon, XIcon } from "@/components/icons";
 import { drinkImage, MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
 import { getCachedDrink } from "@/lib/providers/cache";
-import { getProvider, isProviderId } from "@/lib/providers/registry";
+import { getProvider } from "@/lib/providers/registry";
 import { parseDrinkKey } from "@/lib/providers/types";
 import { evaluateRecipe } from "@/lib/matching";
 import { loadInventoryIndex } from "@/lib/recipe-queries";
@@ -131,6 +131,7 @@ export default async function DiscoverDetailPage({
             {evaluation.ingredients.map((ingredient, index) => {
               const have = Boolean(ingredient.match) || ingredient.assumed;
               return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: a recipe can list the same ingredient slug twice, so the position is part of what makes the key unique
                 <li key={`${ingredient.slug}-${index}`} className="flex items-center gap-3 p-3">
                   <span
                     aria-hidden

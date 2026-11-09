@@ -6,7 +6,7 @@ import { completeSetup } from "@/actions/setup";
 import type { ActionResult } from "@/actions/inventory";
 import { PasswordField } from "@/components/password-field";
 
-export function SetupForm({ authMode }: { authMode: string }) {
+export function SetupForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);

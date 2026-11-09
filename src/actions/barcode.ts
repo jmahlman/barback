@@ -134,7 +134,7 @@ export async function lookupBarcode(raw: string): Promise<BarcodeOutcome> {
   try {
     const { product, raw: rawItem } = await lookupUpc(code);
 
-    if (!product || !product.title) {
+    if (!product?.title) {
       await cacheMiss(code, SOURCE);
       return { status: "unknown", code, message: unknownMessage() };
     }

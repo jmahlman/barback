@@ -37,7 +37,10 @@ export interface RecipeFormValues {
 }
 
 let rowCounter = 0;
-const nextKey = () => `row-${(rowCounter += 1)}`;
+const nextKey = () => {
+  rowCounter += 1;
+  return `row-${rowCounter}`;
+};
 
 export function RecipeForm({
   initial,

@@ -57,8 +57,7 @@ export function ConfirmButton({
   }
 
   return (
-    <div
-      role="group"
+    <fieldset
       aria-label={question}
       className="space-y-2 rounded-xl border border-cherry-400/40 bg-cherry-400/5 p-3"
     >
@@ -88,6 +87,6 @@ export function ConfirmButton({
           Cancel
         </button>
       </div>
-    </div>
+    </fieldset>
   );
 }

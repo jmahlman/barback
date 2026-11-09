@@ -8,7 +8,7 @@ import {
   setInStock,
   updateInventoryItem,
 } from "@/actions/inventory";
-import { CATEGORIES, categoryLabel } from "@/lib/categories";
+import { CATEGORIES } from "@/lib/categories";
 import { InventoryForm } from "@/components/inventory-form";
 import { BarcodeScanButton } from "@/components/barcode-scan-button";
 import type { ScannedValues } from "@/actions/barcode";

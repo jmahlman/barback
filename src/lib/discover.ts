@@ -142,7 +142,6 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
   const chain = await providerChain();
   const providersUsed = new Set<string>();
   const errors: string[] = [];
-  let fetched = 0;
 
   for (const provider of chain) {
     if (!(await provider.isConfigured())) {
@@ -158,7 +157,6 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
       const cached = await getCachedQuery(provider.id, "catalogue", key);
       if (cached) {
         providersUsed.add(provider.label);
-        fetched = cached.length;
         break;
       }
 
@@ -172,7 +170,6 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
           drinks.map((d) => d.key),
         );
         providersUsed.add(provider.label);
-        fetched = drinks.length;
         break;
       } catch (error) {
         errors.push(
@@ -194,7 +191,6 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
         const drinks = await provider.findByIngredient(anchor.slug);
         await cacheDrinks(drinks);
         await setCachedQuery(provider.id, "i", anchor.slug, drinks.map((d) => d.key));
-        fetched += drinks.length;
         providersUsed.add(provider.label);
       } catch (error) {
         errors.push(

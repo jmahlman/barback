@@ -12,7 +12,7 @@ export function RatingInput({
   label?: string;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex items-center gap-1">
+    <fieldset aria-label={label} className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
@@ -36,7 +36,7 @@ export function RatingInput({
           clear
         </button>
       ) : null}
-    </div>
+    </fieldset>
   );
 }
 
@@ -50,7 +50,11 @@ export function RatingStars({
 }) {
   if (!value) return null;
   return (
-    <span className="inline-flex items-center gap-0.5 text-brass-400" aria-label={`${value} out of 5`}>
+    <span
+      role="img"
+      aria-label={`${value} out of 5`}
+      className="inline-flex items-center gap-0.5 text-brass-400"
+    >
       {[1, 2, 3, 4, 5].map((star) => (
         <StarIcon
           key={star}

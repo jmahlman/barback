@@ -28,7 +28,6 @@ import {
   AUTH_MODE_ENV,
   AUTH_MODE_LOCKED,
   HAS_SESSION_SECRET,
-  describeMode,
   getAuthMode,
 } from "@/lib/auth-mode";
 import {

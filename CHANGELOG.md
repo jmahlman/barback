@@ -11,7 +11,17 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
-Nothing yet.
+**`npm run lint` works again.** It still called `next lint`, which Next 16
+removed, so it could only ever error — and there was no linter configured at
+all. Barback now uses [Biome](https://biomejs.dev): two packages rather than
+the three hundred an ESLint setup pulls in, and it runs in CI alongside the
+typecheck.
+
+Its first pass found real things: a variable in discovery assigned three
+times and never read, three unused imports, an unused prop, and an
+`aria-label` on a `<span>` that screen readers would have ignored. The star
+rating and the confirmation panels are now real `<fieldset>` elements instead
+of a `div` wearing `role="group"`.
 
 ## 0.2.0
 
