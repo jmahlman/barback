@@ -23,3 +23,9 @@ src/generated/
 coverage/
 .vscode/
 .idea/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
