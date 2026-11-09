@@ -1,6 +1,6 @@
 {
   "name": "barback",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Self-hosted home bartender companion: inventory, recipe book, and what-can-I-make discovery.",
   "license": "AGPL-3.0-or-later",

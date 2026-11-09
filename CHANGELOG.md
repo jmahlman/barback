@@ -11,6 +11,10 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.2.1
+
 **A lemon and a bottle of lemon juice are no longer the same thing.** Which
 shelf you put something on now decides whether it can produce a garnish: a
 lime in Fresh & Perishable covers a recipe asking for a lime wedge, peel,
