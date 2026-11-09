@@ -11,6 +11,18 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+**Citrus garnishes match the fruit again.** Asking for a lime peel, a lemon
+zest, an orange wheel or a grapefruit twist showed as missing even with the
+fruit in the fridge: those forms pointed at slugs that no inventory item
+could ever hold, so they matched nothing at all. Lime had been left out of
+the table entirely, and peel and zest pointed at a dead end for every fruit.
+All of it — peel, zest, twist, wedge, wheel, slice — now routes through the
+fruit itself.
+
+Lemon and lime still stand in for one another, which they already did, and
+the ingredient list says "Using Lime" rather than pretending you had the
+lemon.
+
 **There are tests now.** Eighty-four of them, covering the rules that decide
 what your bar can make: barcode checksums, retail titles, brand-name
 collapsing, substitutions, families, staples and the makeability score. They

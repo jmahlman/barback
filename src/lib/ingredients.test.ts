@@ -116,33 +116,65 @@ describe("findMatch", () => {
     assert.equal(findMatch("gin", []), null);
   });
 
-  test("a lime does not stand in for a lemon", () => {
-    assert.equal(findMatch("lemon peel", ["lime juice"]), null);
+  test("an unrelated ingredient is not covered by a well-stocked shelf", () => {
+    assert.equal(findMatch("absinthe", ["gin", "vodka", "lime juice"]), null);
   });
 });
 
 describe("citrus garnishes", () => {
-  // Inventory stores a lime as "lime juice", so these are what a recipe
-  // requirement actually meets.
-  const shelf = [slugifyIngredient("Lime")];
+  const fruits = ["lime", "lemon", "orange", "grapefruit"] as const;
+  const forms = ["peel", "zest", "twist", "wedge", "wheel", "slice"] as const;
 
-  test("a lime covers the forms that were given aliases", () => {
-    assert.ok(findMatch(slugifyIngredient("lime wedge"), shelf));
-    assert.ok(findMatch(slugifyIngredient("lime twist"), shelf));
+  test("every way of asking for a piece of citrus lands on the same slug", () => {
+    // These drifted apart once already: "lemon peel" pointed at "lemon
+    // twist", a slug no inventory item could ever hold, so having lemons
+    // never covered a recipe asking for the peel. Checking the whole grid
+    // rather than one example is what stops a single fruit being forgotten
+    // again -- lime was, which is how this was found.
+    for (const fruit of fruits) {
+      const slugs = new Set(forms.map((form) => slugifyIngredient(`${fruit} ${form}`)));
+      slugs.add(slugifyIngredient(fruit));
+      assert.equal(
+        slugs.size,
+        1,
+        `${fruit} forms disagree: ${[...slugs].join(", ")}`,
+      );
+    }
+  });
+
+  test("having the fruit covers every garnish made from it", () => {
+    for (const fruit of fruits) {
+      const shelf = [slugifyIngredient(fruit)];
+      for (const form of forms) {
+        const slug = slugifyIngredient(`${fruit} ${form}`);
+        assert.ok(findMatch(slug, shelf), `${fruit} does not cover ${fruit} ${form}`);
+      }
+    }
+  });
+
+  test("lemon and lime stand in for each other, and are reported as doing so", () => {
+    // A pre-existing, deliberate substitution. Routing garnishes through the
+    // fruit extends it to peels and twists, which is what a bartender would
+    // do anyway -- and it shows as "Using Lime", not as the real thing.
+    const match = findMatch(slugifyIngredient("lemon peel"), [slugifyIngredient("lime")]);
+    assert.equal(match?.kind, "substitute");
+  });
+
+  test("the fruits that are not interchangeable stay that way", () => {
+    assert.equal(
+      findMatch(slugifyIngredient("grapefruit twist"), [slugifyIngredient("orange")]),
+      null,
+    );
+    assert.equal(findMatch(slugifyIngredient("orange peel"), [slugifyIngredient("lime")]), null);
   });
 
   test(
-    "a lime should also cover a peel and a wheel",
-    { todo: "barback-wsr: lime peel and lime wheel were never aliased" },
-    () => {
-      assert.ok(findMatch(slugifyIngredient("lime peel"), shelf));
-      assert.ok(findMatch(slugifyIngredient("lime wheel"), shelf));
-    },
-  );
-
-  test(
     "bottled juice should not satisfy a garnish needing the fruit",
-    { todo: "barback-wsr: lime twist slugifies to lime juice, so it does" },
+    {
+      todo:
+        "barback-wsr: a lime and its juice share one slug, and the word-subset " +
+        "rule would link them even if they did not. Needs a change to covers().",
+    },
     () => {
       assert.equal(findMatch(slugifyIngredient("lime twist"), ["lime juice"]), null);
     },
