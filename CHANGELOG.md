@@ -11,6 +11,18 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+**There are tests now.** Eighty-four of them, covering the rules that decide
+what your bar can make: barcode checksums, retail titles, brand-name
+collapsing, substitutions, families, staples and the makeability score. They
+need no new dependencies — Node runs them itself, through the TypeScript
+loader this project already had — and they run in CI beside the lint and the
+typecheck.
+
+Two are marked as known gaps rather than passing: owning limes does not
+satisfy a recipe calling for a lime peel or a lime wheel, and a bottle of lime
+juice wrongly satisfies a lime twist. Both are recorded in the test output
+instead of being quietly accepted.
+
 **`npm run lint` works again.** It still called `next lint`, which Next 16
 removed, so it could only ever error — and there was no linter configured at
 all. Barback now uses [Biome](https://biomejs.dev): two packages rather than

@@ -19,6 +19,8 @@
     "build": "node scripts/generate-licenses.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "biome lint",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "test:watch": "tsx --test --watch \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
