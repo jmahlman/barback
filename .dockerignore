@@ -1,12 +1,32 @@
+# The build context is the repository root, so this file lives there even
+# though the Dockerfile is in docker/. It is the one place every builder
+# (BuildKit, the legacy builder, Podman) reads.
+
+# Rebuilt inside the image.
 node_modules
 .next
-.git
-.gitignore
+src/generated
+*.tsbuildinfo
+
+# Never in an image: data, secrets, and local databases.
 data
 *.db
 .env
 .env*.local
-README.md
-docs
+
+# Repository and tooling state the build does not read.
+.git
+.gitignore
+.github
+.beads
+.agents
+.claude
+.DS_Store
 npm-debug.log*
-src/generated
+
+# Documentation. LICENSE and NOTICE stay: the image carries them.
+README.md
+CHANGELOG.md
+AGENTS.md
+CLAUDE.md
+docs

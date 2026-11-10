@@ -4,8 +4,11 @@ services:
     # Pin a version (…:0.2.0) if you would rather not move automatically.
     image: ghcr.io/jmahlman/barback:latest
     # Building from a local checkout instead? Comment out "image" above and
-    # uncomment this:
-    # build: .
+    # uncomment these. The Dockerfile lives in docker/, but it builds from
+    # the repository root.
+    # build:
+    #   context: .
+    #   dockerfile: docker/Dockerfile
     container_name: barback
     restart: unless-stopped
     ports:

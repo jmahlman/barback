@@ -234,8 +234,10 @@ git clone https://github.com/jmahlman/barback.git && cd barback
 ```
 
 `docker-compose.yml` points at the published image
-(`ghcr.io/jmahlman/barback:latest`), so there is nothing to build. Swap it for
-`build: .` if you would rather compile your own.
+(`ghcr.io/jmahlman/barback:latest`), so there is nothing to build. To compile
+your own, swap `image:` for the `build:` lines commented out under it. The
+Dockerfile lives in `docker/` but builds from the repository root:
+`docker build -f docker/Dockerfile .`
 
 Create a `.env` next to `docker-compose.yml`:
 
@@ -293,12 +295,19 @@ console error to show for it.
 ### Your data
 
 Everything lives in the `barback-data` volume: `barback.db` (SQLite) and
-`uploads/` (recipe photos). That volume is the whole backup.
+`uploads/` (recipe photos). That volume is the whole backup. There is no
+config file to carry with it: everything set on the Settings page, API keys
+included, is in the database.
 
 ```bash
 docker run --rm -v barback-data:/data -v "$PWD":/backup busybox \
   tar czf /backup/barback-backup.tar.gz -C /data .
 ```
+
+To move to another machine, restore that archive into a new `barback-data`
+volume and bring your `.env` along with it. **`BETTER_AUTH_SECRET` is not in
+the volume.** Start the new instance with a different one and your data is all
+there, but every sign-in is invalidated, so everyone has to sign in again.
 
 ## Configuration
 
@@ -743,9 +752,12 @@ SEED_EMAIL=you@example.com npm run seed
 ### Layout
 
 ```
+docker/                        Dockerfile, entrypoint, the image's Prisma config
+.config/prisma.ts              Prisma config for development
 prisma/schema.prisma           Data model and migrations
 src/lib/ingredients.ts         Name normalization, families, substitutions
 src/lib/matching.ts            Makeability scoring and ranking
+src/lib/matching-rules.ts      The switchable rules, read from Settings
 src/lib/settings.ts            Settings, database over environment
 src/lib/auth-mode.ts           Which authentication mode is active
 src/lib/setup.ts               First-run state
@@ -757,11 +769,14 @@ src/lib/session.ts             Resolves the current user, per mode
 src/lib/owner.ts               Who owns the instance
 src/lib/admin-context.ts       Marks admin-initiated user creation
 src/lib/providers/types.ts     The provider interface
+src/lib/providers/cocktail-glass.ts  cocktail.glass, the default
+src/lib/providers/cocktail-glass-parse.ts  Its catalog, read (pure, testable)
 src/lib/providers/cocktaildb.ts   TheCocktailDB
 src/lib/providers/api-ninjas.ts   API Ninjas
 src/lib/providers/api-ninjas-parse.ts  Measure/name parsing (pure, testable)
 src/lib/providers/cache.ts     Caching shared by all providers
 src/lib/providers/registry.ts  Provider choice and fallback order
+src/lib/providers/visible.ts   One copy per cocktail across providers (pure)
 src/lib/products/upc.ts        Barcode validation (pure, testable)
 src/lib/products/classify.ts   Product title -> name, size, shelf (pure)
 src/lib/products/upcitemdb.ts  UPCitemdb, the only file that fetches
