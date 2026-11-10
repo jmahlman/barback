@@ -11,6 +11,10 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.3.0
+
 **cocktail.glass is the new default recipe source.** Five hundred cocktails
 in a single download, with no key to sign up for, and with the site's
 permission for Barback to keep a local copy. Its data is structured rather
@@ -22,6 +26,11 @@ under Settings, if you prefer either.
 **If you have ever saved the Settings page, you are still on TheCocktailDB.**
 A choice saved there is kept, deliberately, so switching is one click in
 Settings → Cocktail data. New instances start on cocktail.glass.
+
+The published `docker-compose.yml` used to force TheCocktailDB into the
+container environment for anyone who had not set `COCKTAIL_PROVIDER`, which
+would have kept everyone on it regardless of the default. It now defaults to
+cocktail.glass too.
 
 Measures are shown exactly as each service publishes them, so cocktail.glass
 recipes are in milliliters.
@@ -57,17 +66,16 @@ are garnishes, but they are not the same drink.
 Water is no longer "covered by" tonic water, nor salt by celery salt. A
 staple is only ever matched by itself; otherwise it is assumed on hand.
 
+The setup page's notes about the sign-in mode and a missing
+`BETTER_AUTH_SECRET` sat over the background photo and were hard to read; they
+are now inside the administrator card. Spellings throughout are American
+("Favorites", not "Favourites").
+
 The Dockerfile and its entrypoint moved into `docker/`, and the development
 Prisma config into `.config/`. `docker-compose.yml` stays where it was, so
 `docker compose up -d` works as before. If you build the image yourself, it is
 now `docker build -f docker/Dockerfile .`. The image also carries its OCI
 source and license labels, and the LICENSE and NOTICE files.
-
-The published `docker-compose.yml` used to force TheCocktailDB into the
-container environment for anyone who had not set `COCKTAIL_PROVIDER`, which
-would have kept everyone on it regardless of the default. It now defaults to
-cocktail.glass too.
-
 
 ## 0.2.1
 
