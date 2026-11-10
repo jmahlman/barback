@@ -37,6 +37,11 @@ expire or refresh on their own; for cocktail.glass, **Check again** now
 always downloads the latest catalog, where before it was skipped for a week
 after the last download.
 
+If the provider you chose needs an API key and has none, Discover now says
+so up front, and links to the setting, instead of offering a button that
+could only fail. With fallback on, it says which provider lookups go to
+instead. Settings says the same under the provider you picked.
+
 The published `docker-compose.yml` used to force TheCocktailDB into the
 container environment for anyone who had not set `COCKTAIL_PROVIDER`, which
 would have kept everyone on it regardless of the default. It now defaults to

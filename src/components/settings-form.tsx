@@ -85,7 +85,7 @@ export function SettingsForm({
         className="space-y-8"
       >
         {/* Which provider to use */}
-        <section className="space-y-3">
+        <section id="cocktail-data" className="scroll-mt-6 space-y-3">
           <div>
             <h2 className="font-display text-xl text-bar-200">Cocktail data</h2>
             <p className="mt-1 text-sm text-bar-400">
@@ -152,6 +152,21 @@ export function SettingsForm({
                       </span>
                     ) : null}
                   </span>
+                  {/* Choosing it is allowed, and its saved cocktails still
+                      show; but say now that lookups cannot work yet. */}
+                  {preferred === provider.id && provider.needsKey && !provider.configured ? (
+                    <span className="mt-2 block text-xs text-cherry-400">
+                      Lookups can&rsquo;t reach {provider.label} until it has a key. Add one
+                      under{" "}
+                      <a
+                        href="#provider-keys"
+                        className="underline underline-offset-4"
+                      >
+                        Keys and connections
+                      </a>
+                      {fallback ? ", or Discover will use the other providers meanwhile." : "."}
+                    </span>
+                  ) : null}
                 </span>
               </label>
             ))}
@@ -176,7 +191,7 @@ export function SettingsForm({
         </section>
 
         {/* Keys */}
-        <section className="space-y-3">
+        <section id="provider-keys" className="scroll-mt-6 space-y-3">
           <div>
             <h2 className="font-display text-xl text-bar-200">Keys and connections</h2>
             <p className="mt-1 text-sm text-bar-400">

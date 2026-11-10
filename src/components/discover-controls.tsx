@@ -79,10 +79,11 @@ export function ScanButton({
 /** Searches the local cache as you type; only the button calls out. */
 export function DiscoverSearchForm({
   defaultQuery = "",
-  providerLabel = "the cocktail provider",
+  providerLabel,
 }: {
   defaultQuery?: string;
-  providerLabel?: string;
+  /** Who a lookup would ask; null hides the link, since it could only fail. */
+  providerLabel: string | null;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(defaultQuery);
@@ -119,16 +120,18 @@ export function DiscoverSearchForm({
       </form>
 
       {/* Separate form, because this one does hit the API. */}
-      <form action={searchUpstream} className="flex">
-        <input type="hidden" name="q" value={value} />
-        <button
-          type="submit"
-          disabled={!value.trim()}
-          className="text-xs text-brass-300 underline-offset-4 hover:underline disabled:opacity-40 disabled:no-underline"
-        >
-          Not here? Look it up on {providerLabel} →
-        </button>
-      </form>
+      {providerLabel ? (
+        <form action={searchUpstream} className="flex">
+          <input type="hidden" name="q" value={value} />
+          <button
+            type="submit"
+            disabled={!value.trim()}
+            className="text-xs text-brass-300 underline-offset-4 hover:underline disabled:opacity-40 disabled:no-underline"
+          >
+            Not here? Look it up on {providerLabel} →
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 }

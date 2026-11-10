@@ -45,6 +45,12 @@ export async function fallbackEnabled(): Promise<boolean> {
  * Fallback is off by default. The providers return noticeably different data,
  * and silently swapping to a weaker one would make results change for reasons
  * that are invisible from the UI.
+ *
+ * The preferred provider is in the chain even without a key, deliberately.
+ * Leaving it out would quietly put another provider's name and drinks on
+ * Discover, and hide its own cached drinks, which work offline with or
+ * without a key. A scan skips it with a clear error instead, and Discover
+ * says up front when it cannot be asked (see `lookupProvider`).
  */
 export async function providerChain(): Promise<CocktailProvider[]> {
   const preferred = await preferredProvider();
@@ -58,4 +64,18 @@ export async function providerChain(): Promise<CocktailProvider[]> {
   }
 
   return chain;
+}
+
+/**
+ * The provider a lookup button would actually reach: the first one in the
+ * chain that is configured. Null when none is, so the page can say why
+ * instead of offering a button that can only fail.
+ */
+export async function lookupProvider(
+  chain?: CocktailProvider[],
+): Promise<CocktailProvider | null> {
+  for (const provider of chain ?? (await providerChain())) {
+    if (await provider.isConfigured()) return provider;
+  }
+  return null;
 }

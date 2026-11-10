@@ -12,7 +12,7 @@ import { BottleIcon, CartIcon, SparkIcon } from "@/components/icons";
 import { cachedDrinkCount, lastFetchedByProvider } from "@/lib/providers/cache";
 import { LocalTime } from "@/components/local-time";
 import { discoverFromCache, searchVisibleDrinks, type DiscoverEntry } from "@/lib/discover";
-import { PROVIDER_LIST, providerChain } from "@/lib/providers/registry";
+import { lookupProvider, PROVIDER_LIST, providerChain } from "@/lib/providers/registry";
 import { evaluateRecipe } from "@/lib/matching";
 import { loadInventoryIndex } from "@/lib/recipe-queries";
 import { db } from "@/lib/db";
@@ -52,6 +52,13 @@ export default async function DiscoverPage({
   );
   const activeLabel = chain[0]?.label ?? "a cocktail provider";
 
+  // Which provider a lookup button would actually reach. Usually the
+  // preferred one; another when it has no key and fallback is on; none at
+  // all when nothing in the chain is configured.
+  const asker = await lookupProvider(chain);
+  const lookupLabel = asker?.label ?? null;
+  const preferredReady = Boolean(asker && asker.id === chain[0]?.id);
+
   return (
     <AppShell user={user}>
       <PageHeader
@@ -59,19 +66,27 @@ export default async function DiscoverPage({
         subtitle={
           query
             ? `Saved cocktails matching “${query}”`
-            : `Cocktails from ${activeLabel}, matched to your shelf.`
+            : `Cocktails from ${preferredReady ? activeLabel : (lookupLabel ?? activeLabel)}, matched to your shelf.`
         }
       />
       <PageBody>
-        <DiscoverSearchForm defaultQuery={query} providerLabel={activeLabel} />
+        {!preferredReady ? (
+          <MissingKeyNotice
+            preferredLabel={activeLabel}
+            fallbackLabel={lookupLabel}
+            isAdmin={user.role === "admin"}
+          />
+        ) : null}
+
+        <DiscoverSearchForm defaultQuery={query} providerLabel={lookupLabel} />
 
         {query ? (
-          <CachedSearchResults userId={user.id} query={query} activeLabel={activeLabel} />
+          <CachedSearchResults userId={user.id} query={query} lookupLabel={lookupLabel} />
         ) : (
           <FromYourShelf
             userId={user.id}
-            activeLabel={activeLabel}
-            wholeCatalog={chain[0]?.capabilities.catalog ?? false}
+            lookupLabel={lookupLabel}
+            wholeCatalog={asker?.capabilities.catalog ?? false}
           />
         )}
 
@@ -98,6 +113,47 @@ export default async function DiscoverPage({
   );
 }
 
+/**
+ * The preferred provider has no key. Said before anything is pressed, since
+ * otherwise the only sign is an error after a lookup that could never work.
+ */
+function MissingKeyNotice({
+  preferredLabel,
+  fallbackLabel,
+  isAdmin,
+}: {
+  preferredLabel: string;
+  /** Who lookups go to instead, when fallback found someone. */
+  fallbackLabel: string | null;
+  isAdmin: boolean;
+}) {
+  return (
+    <div className="card space-y-1 border-brass-400/40 p-4 text-sm">
+      <p className="text-bar-200">
+        {fallbackLabel
+          ? `${preferredLabel} has no API key, so lookups go to ${fallbackLabel} until you add one.`
+          : `${preferredLabel} needs an API key before Barback can look anything up.`}
+      </p>
+      <p className="text-xs text-bar-400">
+        {isAdmin ? (
+          <>
+            Add one, or choose a provider that needs none, in{" "}
+            <Link
+              href="/settings#cocktail-data"
+              className="text-brass-300 underline-offset-4 hover:underline"
+            >
+              Settings → Cocktail data
+            </Link>
+            . Cocktails already saved still work.
+          </>
+        ) : (
+          "Whoever runs this Barback can add one in Settings. Cocktails already saved still work."
+        )}
+      </p>
+    </div>
+  );
+}
+
 async function savedExternalIds(userId: string): Promise<Set<string>> {
   const rows = await db.recipe.findMany({
     where: { userId, externalId: { not: null } },
@@ -109,11 +165,11 @@ async function savedExternalIds(userId: string): Promise<Set<string>> {
 async function CachedSearchResults({
   userId,
   query,
-  activeLabel,
+  lookupLabel,
 }: {
   userId: string;
   query: string;
-  activeLabel: string;
+  lookupLabel: string | null;
 }) {
   const [drinks, inventory, saved] = await Promise.all([
     searchVisibleDrinks(query),
@@ -125,7 +181,11 @@ async function CachedSearchResults({
     return (
       <EmptyState
         title="Not in your saved cocktails"
-        body={`Nothing saved matches “${query}”. Use the lookup link above to ask ${activeLabel} — that is the only thing that calls the API.`}
+        body={
+          lookupLabel
+            ? `Nothing saved matches “${query}”. Use the lookup link above to ask ${lookupLabel} — that is the only thing that calls the API.`
+            : `Nothing saved matches “${query}”.`
+        }
       />
     );
   }
@@ -162,11 +222,12 @@ async function CachedSearchResults({
 
 async function FromYourShelf({
   userId,
-  activeLabel,
+  lookupLabel,
   wholeCatalog,
 }: {
   userId: string;
-  activeLabel: string;
+  /** The provider a lookup would reach, or null when none can be asked. */
+  lookupLabel: string | null;
   /** The provider hands over everything at once, so the shelf is matched locally. */
   wholeCatalog: boolean;
 }) {
@@ -191,12 +252,22 @@ async function FromYourShelf({
   // from a provider you have since switched away from are not shown, so a
   // cache holding only those still means nothing has been checked yet.
   if (result.considered === 0) {
+    // The notice above already says why; no button that can only fail.
+    if (!lookupLabel) {
+      return (
+        <EmptyState
+          icon={<SparkIcon className="size-12" />}
+          title="Nothing to check yet"
+          body="Once a cocktail provider is set up, Barback can find what your shelf can make."
+        />
+      );
+    }
     return (
       <EmptyState
         icon={<SparkIcon className="size-12" />}
         title="Ready when you are"
-        body={`Barback will ask ${activeLabel} which cocktails your shelf can cover, then keep the answers locally so this page works offline afterwards.`}
-        action={<ScanButton label={`Check ${activeLabel} now`} providerLabel={activeLabel} />}
+        body={`Barback will ask ${lookupLabel} which cocktails your shelf can cover, then keep the answers locally so this page works offline afterwards.`}
+        action={<ScanButton label={`Check ${lookupLabel} now`} providerLabel={lookupLabel} />}
       />
     );
   }
@@ -256,29 +327,31 @@ async function FromYourShelf({
         </section>
       ) : null}
 
-      <section className="card space-y-2 p-4">
-        {wholeCatalog ? (
-          <>
-            <h2 className="text-sm font-medium text-bar-300">Want the latest recipes?</h2>
-            <p className="text-xs text-bar-400">
-              Barback keeps all of {activeLabel}&rsquo;s cocktails, so a changed shelf is
-              matched straight away. Check again to pick up any they have added since.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2 className="text-sm font-medium text-bar-300">Shelf changed?</h2>
-            <p className="text-xs text-bar-400">
-              Run another lookup to pick up cocktails your newer ingredients unlock.
-            </p>
-          </>
-        )}
-        <ScanButton
-          label={`Check ${activeLabel} again`}
-          providerLabel={activeLabel}
-          variant="secondary"
-        />
-      </section>
+      {lookupLabel ? (
+        <section className="card space-y-2 p-4">
+          {wholeCatalog ? (
+            <>
+              <h2 className="text-sm font-medium text-bar-300">Want the latest recipes?</h2>
+              <p className="text-xs text-bar-400">
+                Barback keeps all of {lookupLabel}&rsquo;s cocktails, so a changed shelf is
+                matched straight away. Check again to pick up any they have added since.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-sm font-medium text-bar-300">Shelf changed?</h2>
+              <p className="text-xs text-bar-400">
+                Run another lookup to pick up cocktails your newer ingredients unlock.
+              </p>
+            </>
+          )}
+          <ScanButton
+            label={`Check ${lookupLabel} again`}
+            providerLabel={lookupLabel}
+            variant="secondary"
+          />
+        </section>
+      ) : null}
     </div>
   );
 }
