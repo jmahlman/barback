@@ -4,9 +4,41 @@
 import {
   findMatch,
   PANTRY_STAPLES,
+  SUBSTITUTION_GROUPS,
   type IngredientMatch,
   type MatchKind,
+  type SubstitutionGroupId,
 } from "@/lib/ingredients";
+
+/**
+ * The matching rules an administrator can switch in Settings. The rest
+ * (brand names, families, partial names) are always on: without them Barback
+ * could not tell that a bottle of Beefeater is gin.
+ */
+export interface MatchingRules {
+  /** Stand-in groups that are switched on. */
+  substitutions: ReadonlySet<SubstitutionGroupId>;
+  /** A missing garnish never stops a drink. */
+  garnishesOptional: boolean;
+  /** Ice, water, salt and pepper count as on hand. */
+  assumeStaples: boolean;
+}
+
+/** How Barback matched before any of this could be changed. */
+export const DEFAULT_RULES: MatchingRules = {
+  substitutions: new Set(SUBSTITUTION_GROUPS.map((group) => group.id)),
+  garnishesOptional: true,
+  assumeStaples: true,
+};
+
+/** Why something counts as missing, when a rule that is switched off is the reason. */
+export type BlockedBy =
+  /** A stand-in on the shelf would count if its group were on. */
+  | { rule: "substitution"; group: SubstitutionGroupId; inventorySlug: string }
+  /** A pantry staple, and staples are not being assumed. */
+  | { rule: "staples" }
+  /** A garnish, and garnishes are counting. */
+  | { rule: "garnish" };
 
 export interface RequiredIngredient {
   name: string;
@@ -22,6 +54,8 @@ export interface EvaluatedIngredient extends RequiredIngredient {
   match: IngredientMatch | null;
   /** True when it is assumed on hand (ice, water) rather than matched. */
   assumed: boolean;
+  /** Set when it is missing because of a rule that is switched off. */
+  blockedBy: BlockedBy | null;
 }
 
 export interface RecipeEvaluation {
@@ -49,6 +83,9 @@ export interface InventoryIndex {
    * apart — and a lemon peel can only come off the former.
    */
   fresh: Set<string>;
+  /** The rules to match by. Carried here so every page that loads a shelf
+   * gets them, without each one having to remember to. */
+  rules: MatchingRules;
 }
 
 /** Shelves that hold the thing itself rather than something poured from it. */
@@ -56,6 +93,7 @@ const WHOLE_INGREDIENT_SHELVES: ReadonlySet<string> = new Set(["fresh", "garnish
 
 export function buildInventoryIndex(
   items: { slug: string; name: string; inStock: boolean; category?: string | null }[],
+  rules: MatchingRules = DEFAULT_RULES,
 ): InventoryIndex {
   const slugs = new Set<string>();
   const names = new Map<string, string>();
@@ -68,7 +106,7 @@ export function buildInventoryIndex(
       fresh.add(item.slug);
     }
   }
-  return { slugs, names, fresh };
+  return { slugs, names, fresh, rules };
 }
 
 const KIND_WEIGHT: Record<MatchKind, number> = {
@@ -81,23 +119,48 @@ const KIND_WEIGHT: Record<MatchKind, number> = {
 export function evaluateRecipe(
   required: RequiredIngredient[],
   inventory: InventoryIndex,
-  options: { assumeStaples?: boolean } = {},
+  /** Overrides for the shelf's own rules, mostly for tests. */
+  overrides: Partial<MatchingRules> = {},
 ): RecipeEvaluation {
-  const assumeStaples = options.assumeStaples ?? true;
+  const rules: MatchingRules = { ...(inventory.rules ?? DEFAULT_RULES), ...overrides };
+  const options = { substitutions: rules.substitutions };
 
   const ingredients: EvaluatedIngredient[] = required.map((ingredient) => {
-    const isStaple = assumeStaples && PANTRY_STAPLES.has(ingredient.slug);
-    const match = ingredient.slug
-      ? findMatch(ingredient.slug, inventory.slugs, inventory.fresh)
-      : null;
-    return {
-      ...ingredient,
-      match,
-      assumed: Boolean(isStaple && !match),
-    };
+    const slug = ingredient.slug;
+    const isStaple = PANTRY_STAPLES.has(slug);
+    // A staple is matched only by itself. Otherwise "water" finds "tonic
+    // water" by name and the page says the tonic covers it.
+    const match = !slug
+      ? null
+      : isStaple
+        ? inventory.slugs.has(slug)
+          ? { kind: "exact" as const, inventorySlug: slug }
+          : null
+        : findMatch(slug, inventory.slugs, inventory.fresh, options);
+    const assumed = Boolean(isStaple && !match && rules.assumeStaples);
+
+    let blockedBy: BlockedBy | null = null;
+    if (!match && !assumed && slug) {
+      // Would a stand-in that is switched off have counted?
+      const withAll = isStaple ? null : findMatch(slug, inventory.slugs, inventory.fresh);
+      if (withAll?.kind === "substitute" && withAll.group) {
+        blockedBy = {
+          rule: "substitution",
+          group: withAll.group,
+          inventorySlug: withAll.inventorySlug,
+        };
+      } else if (isStaple) {
+        blockedBy = { rule: "staples" };
+      } else if (ingredient.garnish && !rules.garnishesOptional) {
+        blockedBy = { rule: "garnish" };
+      }
+    }
+
+    return { ...ingredient, match, assumed, blockedBy };
   });
 
-  const isRequired = (i: EvaluatedIngredient) => !i.optional && !i.garnish;
+  const isRequired = (i: EvaluatedIngredient) =>
+    !i.optional && !(i.garnish && rules.garnishesOptional);
   const satisfied = (i: EvaluatedIngredient) => Boolean(i.match) || i.assumed;
 
   const requiredItems = ingredients.filter(isRequired);

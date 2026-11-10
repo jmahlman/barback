@@ -105,6 +105,11 @@ describe("findMatch", () => {
     assert.equal(findMatch("rye", ["bourbon"])?.kind, "substitute");
   });
 
+  test("an olive does not stand in for a cherry, or the other way round", () => {
+    assert.equal(findMatch("cherry", ["olives"]), null);
+    assert.equal(findMatch("olives", ["cherry"]), null);
+  });
+
   test("prefers the closest match when several would do", () => {
     // Exact over family, family over substitute.
     assert.equal(findMatch("bourbon", ["rye", "bourbon"])?.kind, "exact");

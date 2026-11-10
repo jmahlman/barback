@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { IngredientRow } from "@/components/ingredient-row";
 import { AppShell, PageBody, PageHeader } from "@/components/app-shell";
 import { MakeableBadge } from "@/components/recipe-card";
 import { ImportButton } from "@/components/import-button";
 import { AddMissingButton } from "@/components/recipe-detail-actions";
 import { EmptyState } from "@/components/empty-state";
 import { FetchDrinkButton } from "@/components/fetch-drink-button";
-import { CheckIcon, GlassIcon, SparkIcon, XIcon } from "@/components/icons";
+import { GlassIcon, SparkIcon } from "@/components/icons";
 import { drinkImage, drinkImageFullPx, MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
 import { getCachedDrink } from "@/lib/providers/cache";
 import { getProvider } from "@/lib/providers/registry";
@@ -136,37 +137,14 @@ export default async function DiscoverDetailPage({
         <section className="space-y-3">
           <h2 className="font-display text-xl text-bar-200">Ingredients</h2>
           <ul className="card divide-y divide-bar-800 overflow-hidden">
-            {evaluation.ingredients.map((ingredient, index) => {
-              const have = Boolean(ingredient.match) || ingredient.assumed;
-              return (
+            {evaluation.ingredients.map((ingredient, index) => (
+              <IngredientRow
                 // biome-ignore lint/suspicious/noArrayIndexKey: a recipe can list the same ingredient slug twice, so the position is part of what makes the key unique
-                <li key={`${ingredient.slug}-${index}`} className="flex items-center gap-3 p-3">
-                  <span
-                    aria-hidden
-                    className={`flex size-7 shrink-0 items-center justify-center rounded-md ${
-                      have ? "bg-citrus-400/15 text-citrus-400" : "bg-cherry-400/15 text-cherry-400"
-                    }`}
-                  >
-                    {have ? <CheckIcon className="size-4" /> : <XIcon className="size-4" />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-bar-200">
-                      {ingredient.measure ? (
-                        <span className="font-medium text-brass-300">{ingredient.measure} </span>
-                      ) : null}
-                      {ingredient.name}
-                    </p>
-                    {ingredient.match && ingredient.match.kind !== "exact" ? (
-                      <p className="text-xs text-bar-400">
-                        {ingredient.match.kind === "substitute" ? "Using" : "Covered by"}{" "}
-                        {inventory.names.get(ingredient.match.inventorySlug) ??
-                          ingredient.match.inventorySlug}
-                      </p>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
+                key={`${ingredient.slug}-${index}`}
+                ingredient={ingredient}
+                inventory={inventory}
+              />
+            ))}
           </ul>
 
           {missingNames.length > 0 ? <AddMissingButton names={missingNames} /> : null}

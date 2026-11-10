@@ -96,13 +96,20 @@ intact if the provider reorganizes its files — and the page says where the
 photo came from until you put your own there. Tap any photo to see it larger.
 
 **What can I make** — Every recipe is checked against your inventory and
-labeled "you can make this" or "missing X". Optional ingredients and garnishes
-never block a drink. A small amount of bartender knowledge is built in:
+labeled "you can make this" or "missing X". Optional ingredients never block a
+drink. A small amount of bartender knowledge is built in:
 
 - Brand names collapse to their base: *Beefeater London Dry Gin* → `gin`
 - Families: having *rum* covers a recipe calling for *white rum*
-- Substitutions: *simple syrup* stands in for *sugar*, and the UI says so
+- Stand-ins: *simple syrup* for *sugar*, *rye* for *bourbon*, and the UI says
+  "Using … instead"
+- Garnishes never block a drink
 - Staples like ice, water and salt are assumed rather than nagged about
+
+The last three are switches under **Settings → Matching**, so a stricter bar can
+turn them off. They apply to the whole instance: the owner changes them, and
+everyone else can see them (Inventory links there too). When one of them is why
+something shows as missing, the recipe page says which, and links to it.
 
 **Discover** — The same matching run against an online cocktail database, so
 you can find drinks you've never written down. It also tells you which single
@@ -216,7 +223,7 @@ browser — only a masked form showing the last four characters.
 
 Settings belong to the **instance owner**, which is simply the first account
 created. Other accounts see a locked page and are sent none of the
-configuration.
+configuration, except the matching rules, which they can read but not change.
 
 ## Running it
 

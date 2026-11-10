@@ -42,6 +42,21 @@ so up front, and links to the setting, instead of offering a button that
 could only fail. With fallback on, it says which provider lookups go to
 instead. Settings says the same under the provider you picked.
 
+**Matching rules are now settings.** Under Settings → Matching, the owner
+can switch off each stand-in (simple syrup and sugar, lemon and lime, club
+soda and sparkling water, cream and milk, bourbon and rye), make garnishes
+count, or stop assuming ice, water, salt and pepper. Everything is on by
+default, which is how matching worked before. Everyone else can see the
+rules but not change them, and Inventory links to them. When a rule that is
+off is why something shows as missing, the recipe page says so — "You have
+Rittenhouse Rye, but Bourbon and rye is switched off" — with a link to it.
+
+An olive no longer stands in for a cherry, or a cherry for an olive. Both
+are garnishes, but they are not the same drink.
+
+Water is no longer "covered by" tonic water, nor salt by celery salt. A
+staple is only ever matched by itself; otherwise it is assumed on hand.
+
 The published `docker-compose.yml` used to force TheCocktailDB into the
 container environment for anyone who had not set `COCKTAIL_PROVIDER`, which
 would have kept everyone on it regardless of the default. It now defaults to

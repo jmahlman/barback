@@ -23,6 +23,9 @@ export const SETTING_KEYS = {
   barcodeLookupEnabled: "barcode.lookupEnabled",
   upcitemdbApiKey: "upcitemdb.apiKey",
   upcitemdbQuota: "upcitemdb.quota",
+  matchingDisabledSubstitutions: "matching.disabledSubstitutions",
+  matchingGarnishesOptional: "matching.garnishesOptional",
+  matchingAssumeStaples: "matching.assumeStaples",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
@@ -41,6 +44,10 @@ const ENV_FALLBACK: Record<SettingKey, () => string | undefined> = {
   [SETTING_KEYS.barcodeLookupEnabled]: () => process.env.BARCODE_LOOKUP,
   [SETTING_KEYS.upcitemdbApiKey]: () => process.env.UPCITEMDB_API_KEY,
   [SETTING_KEYS.upcitemdbQuota]: () => undefined,
+  // Set from the Settings page only; nothing to provision.
+  [SETTING_KEYS.matchingDisabledSubstitutions]: () => undefined,
+  [SETTING_KEYS.matchingGarnishesOptional]: () => undefined,
+  [SETTING_KEYS.matchingAssumeStaples]: () => undefined,
 };
 
 const DEFAULTS: Record<SettingKey, string> = {
@@ -70,6 +77,11 @@ const DEFAULTS: Record<SettingKey, string> = {
   // everything behind your IP address. A key raises that ceiling.
   [SETTING_KEYS.upcitemdbApiKey]: "",
   [SETTING_KEYS.upcitemdbQuota]: "",
+  // Stored as the groups switched OFF, so a stand-in added in a later
+  // version starts on rather than silently off.
+  [SETTING_KEYS.matchingDisabledSubstitutions]: "",
+  [SETTING_KEYS.matchingGarnishesOptional]: "true",
+  [SETTING_KEYS.matchingAssumeStaples]: "true",
 };
 
 async function readStored(): Promise<Map<string, string>> {

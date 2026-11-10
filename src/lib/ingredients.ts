@@ -206,23 +206,59 @@ for (const [generic, members] of Object.entries(FAMILIES)) {
   }
 }
 
-/** Interchangeable in a pinch. Symmetric. */
-const SUBSTITUTIONS: string[][] = [
-  ["simple syrup", "sugar", "agave syrup", "honey"],
-  ["lemon juice", "lime juice"],
-  ["club soda", "sparkling water"],
-  ["cream", "milk"],
-  ["bourbon", "rye"],
-  ["cherry", "olives"],
-];
+/**
+ * Interchangeable in a pinch. Symmetric within a group.
+ *
+ * Each group can be switched off in Settings, so each has a stable id (what
+ * is stored) and a label written the way the Settings page shows it.
+ *
+ * Not cherries and olives: they are both garnishes, but nobody would put an
+ * olive in a Whiskey Sour and call it the same drink.
+ */
+export const SUBSTITUTION_GROUPS = [
+  {
+    id: "sweeteners",
+    label: "Simple syrup, sugar, agave and honey",
+    members: ["simple syrup", "sugar", "agave syrup", "honey"],
+  },
+  { id: "citrus", label: "Lemon and lime juice", members: ["lemon juice", "lime juice"] },
+  {
+    id: "soda",
+    label: "Club soda and sparkling water",
+    members: ["club soda", "sparkling water"],
+  },
+  { id: "dairy", label: "Cream and milk", members: ["cream", "milk"] },
+  { id: "whiskey", label: "Bourbon and rye", members: ["bourbon", "rye"] },
+] as const;
 
-const SUBSTITUTES_FOR = new Map<string, Set<string>>();
-for (const group of SUBSTITUTIONS) {
-  for (const member of group) {
-    const set = SUBSTITUTES_FOR.get(member) ?? new Set<string>();
-    for (const other of group) if (other !== member) set.add(other);
-    SUBSTITUTES_FOR.set(member, set);
+export type SubstitutionGroupId = (typeof SUBSTITUTION_GROUPS)[number]["id"];
+
+export function isSubstitutionGroupId(value: string): value is SubstitutionGroupId {
+  return SUBSTITUTION_GROUPS.some((group) => group.id === value);
+}
+
+/** member -> (other member -> the group that pairs them). */
+const SUBSTITUTES_FOR = new Map<string, Map<string, SubstitutionGroupId>>();
+for (const group of SUBSTITUTION_GROUPS) {
+  for (const member of group.members) {
+    const others = SUBSTITUTES_FOR.get(member) ?? new Map<string, SubstitutionGroupId>();
+    for (const other of group.members) if (other !== member) others.set(other, group.id);
+    SUBSTITUTES_FOR.set(member, others);
   }
+}
+
+/**
+ * The group that lets `inventorySlug` stand in for `recipeSlug`, if any, and
+ * only when that group is switched on. `enabled` undefined means all are.
+ */
+function substituteGroup(
+  inventorySlug: string,
+  recipeSlug: string,
+  enabled?: ReadonlySet<SubstitutionGroupId>,
+): SubstitutionGroupId | null {
+  const group = SUBSTITUTES_FOR.get(inventorySlug)?.get(recipeSlug);
+  if (!group) return null;
+  return !enabled || enabled.has(group) ? group : null;
 }
 
 /**
@@ -425,6 +461,14 @@ export interface IngredientMatch {
   kind: MatchKind;
   /** The inventory slug that covered the requirement. */
   inventorySlug: string;
+  /** For a stand-in, the group that allowed it. */
+  group?: SubstitutionGroupId;
+}
+
+/** Which of the optional rules apply when matching. */
+export interface MatchOptions {
+  /** Stand-in groups that are switched on. Undefined means all of them. */
+  substitutions?: ReadonlySet<SubstitutionGroupId>;
 }
 
 function wordSet(slug: string): Set<string> {
@@ -442,13 +486,14 @@ function covers(
   inventorySlug: string,
   recipeSlug: string,
   freshSlugs?: ReadonlySet<string>,
-): MatchKind | null {
+  options: MatchOptions = {},
+): { kind: MatchKind; group?: SubstitutionGroupId } | null {
   if (!inventorySlug || !recipeSlug) return null;
-  if (inventorySlug === recipeSlug) return "exact";
+  if (inventorySlug === recipeSlug) return { kind: "exact" };
 
   // Family: "rum" in stock covers "white rum", and vice versa.
-  if (FAMILIES[inventorySlug]?.includes(recipeSlug)) return "family";
-  if (GENERICS_FOR.get(inventorySlug)?.has(recipeSlug)) return "family";
+  if (FAMILIES[inventorySlug]?.includes(recipeSlug)) return { kind: "family" };
+  if (GENERICS_FOR.get(inventorySlug)?.has(recipeSlug)) return { kind: "family" };
 
   // Partial: every word of the recipe requirement appears in the stocked item
   // ("bourbon" needed, "buffalo trace bourbon" stocked) or the other way round
@@ -457,9 +502,10 @@ function covers(
   const rec = wordSet(recipeSlug);
   const recipeInInventory = [...rec].every((w) => inv.has(w));
   const inventoryInRecipe = [...inv].every((w) => rec.has(w));
-  if (recipeInInventory || inventoryInRecipe) return "partial";
+  if (recipeInInventory || inventoryInRecipe) return { kind: "partial" };
 
-  if (SUBSTITUTES_FOR.get(inventorySlug)?.has(recipeSlug)) return "substitute";
+  const group = substituteGroup(inventorySlug, recipeSlug, options.substitutions);
+  if (group) return { kind: "substitute", group };
 
   // A piece of citrus has to come off a piece of citrus. The fruit is
   // recorded as its juice, so the shelf it sits on is what separates a lime
@@ -467,9 +513,10 @@ function covers(
   const fruit = citrusGarnishFruit(recipeSlug);
   if (fruit && freshSlugs?.has(inventorySlug)) {
     const asJuice = `${fruit} juice`;
-    if (inventorySlug === asJuice || inventorySlug === fruit) return "exact";
-    // Lemons and limes already stand in for each other.
-    if (SUBSTITUTES_FOR.get(inventorySlug)?.has(asJuice)) return "substitute";
+    if (inventorySlug === asJuice || inventorySlug === fruit) return { kind: "exact" };
+    // Lemons and limes stand in for each other, when that is switched on.
+    const citrus = substituteGroup(inventorySlug, asJuice, options.substitutions);
+    if (citrus) return { kind: "substitute", group: citrus };
   }
 
   return null;
@@ -490,14 +537,15 @@ export function findMatch(
   recipeSlug: string,
   inventorySlugs: Iterable<string>,
   freshSlugs?: ReadonlySet<string>,
+  options: MatchOptions = {},
 ): IngredientMatch | null {
   let best: IngredientMatch | null = null;
   for (const inventorySlug of inventorySlugs) {
-    const kind = covers(inventorySlug, recipeSlug, freshSlugs);
-    if (!kind) continue;
-    if (!best || KIND_RANK[kind] < KIND_RANK[best.kind]) {
-      best = { kind, inventorySlug };
-      if (kind === "exact") break;
+    const found = covers(inventorySlug, recipeSlug, freshSlugs, options);
+    if (!found) continue;
+    if (!best || KIND_RANK[found.kind] < KIND_RANK[best.kind]) {
+      best = { ...found, inventorySlug };
+      if (found.kind === "exact") break;
     }
   }
   return best;

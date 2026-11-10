@@ -15,6 +15,8 @@ import {
   isAuthMode,
 } from "@/lib/auth-mode";
 import type { ActionResult } from "@/actions/inventory";
+import { isSubstitutionGroupId } from "@/lib/ingredients";
+import { saveMatchingRules } from "@/lib/matching-rules";
 
 /** Settings hold API keys, so only the instance owner may change them. */
 async function requireOwner() {
@@ -247,4 +249,34 @@ export async function clearUpcitemdbKey(): Promise<ActionResult> {
   revalidatePath("/settings");
   revalidatePath("/inventory");
   return { ok: true, error: "Key removed. Barcode lookups will use the free tier." };
+}
+
+const matchingSchema = z.object({
+  substitutions: z.array(z.string().refine(isSubstitutionGroupId, "Unknown stand-in.")),
+  garnishesOptional: z.boolean(),
+  assumeStaples: z.boolean(),
+});
+
+/**
+ * Save the matching rules. One set for the whole instance: anyone can read
+ * them on the Settings page, only the owner can change them.
+ */
+export async function saveMatchingSettings(
+  input: z.input<typeof matchingSchema>,
+): Promise<ActionResult> {
+  const owner = await requireOwner();
+  if (!owner) {
+    return { ok: false, error: "Only the instance owner can change the matching rules." };
+  }
+
+  const parsed = matchingSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Those rules are invalid." };
+  }
+
+  await saveMatchingRules(parsed.data);
+
+  // Every page that says what you can make reads these.
+  revalidatePath("/", "layout");
+  return { ok: true, error: "Matching rules saved." };
 }

@@ -1,14 +1,18 @@
 import { db } from "@/lib/db";
+import { loadMatchingRules } from "@/lib/matching-rules";
 import { buildInventoryIndex, evaluateRecipe, type RecipeEvaluation } from "@/lib/matching";
 import { uploadUrl } from "@/lib/uploads";
 
 /** Inventory index for a user, ready for matching. */
 export async function loadInventoryIndex(userId: string) {
-  const items = await db.inventoryItem.findMany({
-    where: { userId },
-    select: { slug: true, name: true, inStock: true, category: true },
-  });
-  return buildInventoryIndex(items);
+  const [items, rules] = await Promise.all([
+    db.inventoryItem.findMany({
+      where: { userId },
+      select: { slug: true, name: true, inStock: true, category: true },
+    }),
+    loadMatchingRules(),
+  ]);
+  return buildInventoryIndex(items, rules);
 }
 
 export interface RecipeListEntry {

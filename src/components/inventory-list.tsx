@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createInventoryItem,
@@ -172,9 +173,19 @@ export function InventoryList({ items }: { items: InventoryItemView[] }) {
         <EmptyState title="Nothing matches" body="Try a different search or shelf." />
       ) : (
         <>
-          <p className="text-sm text-bar-400">
-            {inStockCount} in stock · {items.length} tracked
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="text-sm text-bar-400">
+              {inStockCount} in stock · {items.length} tracked
+            </p>
+            {/* Which bottles count for which, e.g. rye for bourbon, is set
+                once for the whole instance; this is where people look. */}
+            <Link
+              href="/settings#matching"
+              className="text-xs text-brass-300 underline-offset-4 hover:underline"
+            >
+              Stand-ins and matching rules →
+            </Link>
+          </div>
           <div className="space-y-6">
             {grouped.map((group) => (
               <section key={group.category}>

@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { AppShell, PageBody, PageHeader } from "@/components/app-shell";
 import { SettingsForm, type ProviderView } from "@/components/settings-form";
 import { BarcodeSettings, type BarcodeSettingsView } from "@/components/barcode-settings";
+import { MatchingSettings, type MatchingSettingsView } from "@/components/matching-settings";
+import { SUBSTITUTION_GROUPS } from "@/lib/ingredients";
+import { loadMatchingRules } from "@/lib/matching-rules";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ChevronRightIcon } from "@/components/icons";
 import { isOwner } from "@/lib/owner";
@@ -127,20 +130,36 @@ export default async function SettingsPage() {
   const releaseState = await getReleaseState();
   const badgeTag = await pendingUpdateTag();
 
+  // Shown to everyone: it decides what every recipe page says. Nothing
+  // secret in it, unlike the provider settings below.
+  const rules = await loadMatchingRules();
+  const matching: MatchingSettingsView = {
+    groups: SUBSTITUTION_GROUPS.map((group) => ({
+      id: group.id,
+      label: group.label,
+      on: rules.substitutions.has(group.id),
+    })),
+    garnishesOptional: rules.garnishesOptional,
+    assumeStaples: rules.assumeStaples,
+  };
+
   // A non-owner is sent no provider configuration at all. Rendering the
   // locked view is not enough on its own: anything passed as a prop ends up
   // in the payload the browser receives, masked key included.
   if (!owner) {
     return (
       <AppShell user={user}>
-        <PageHeader title="Settings" subtitle="How Barback looks cocktails up." />
+        <PageHeader title="Settings" subtitle="How Barback matches your shelf and looks cocktails up." />
         <PageBody>
-          <SettingsForm
-            providers={[]}
-            preferredProvider=""
-            fallbackEnabled={false}
-            canEdit={false}
-          />
+          <MatchingSettings initial={matching} canEdit={false} />
+          <div className="border-t border-bar-800 pt-6">
+            <SettingsForm
+              providers={[]}
+              preferredProvider=""
+              fallbackEnabled={false}
+              canEdit={false}
+            />
+          </div>
           <section className="space-y-2 border-t border-bar-800 pt-6">
             <h2 className="font-display text-xl text-bar-200">Account</h2>
             <p className="text-sm text-bar-400">{user.email}</p>
@@ -209,14 +228,18 @@ export default async function SettingsPage() {
 
   return (
     <AppShell user={user}>
-      <PageHeader title="Settings" subtitle="How Barback looks cocktails up." />
+      <PageHeader title="Settings" subtitle="How Barback matches your shelf and looks cocktails up." />
       <PageBody>
-        <SettingsForm
-          providers={providers}
-          preferredProvider={preferred}
-          fallbackEnabled={fallback === "true"}
-          canEdit={owner}
-        />
+        <MatchingSettings initial={matching} canEdit />
+
+        <div className="border-t border-bar-800 pt-6">
+          <SettingsForm
+            providers={providers}
+            preferredProvider={preferred}
+            fallbackEnabled={fallback === "true"}
+            canEdit={owner}
+          />
+        </div>
 
         <div className="border-t border-bar-800 pt-6">
           <BarcodeSettings initial={barcode} />
