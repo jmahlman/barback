@@ -32,6 +32,11 @@ hundred classics are in both catalogs, so a Margarita could have appeared
 twice. Discover now shows only the providers you are using, and where two
 of them have the same drink, the copy from the one you prefer.
 
+Discover says when each provider was last fetched. Saved cocktails never
+expire or refresh on their own; for cocktail.glass, **Check again** now
+always downloads the latest catalog, where before it was skipped for a week
+after the last download.
+
 The published `docker-compose.yml` used to force TheCocktailDB into the
 container environment for anyone who had not set `COCKTAIL_PROVIDER`, which
 would have kept everyone on it regardless of the default. It now defaults to

@@ -9,7 +9,8 @@ import {
 } from "@/components/discover-controls";
 import { EmptyState } from "@/components/empty-state";
 import { BottleIcon, CartIcon, SparkIcon } from "@/components/icons";
-import { cachedDrinkCount } from "@/lib/providers/cache";
+import { cachedDrinkCount, lastFetchedByProvider } from "@/lib/providers/cache";
+import { LocalTime } from "@/components/local-time";
 import { discoverFromCache, searchVisibleDrinks, type DiscoverEntry } from "@/lib/discover";
 import { PROVIDER_LIST, providerChain } from "@/lib/providers/registry";
 import { evaluateRecipe } from "@/lib/matching";
@@ -20,7 +21,7 @@ import { requireUser } from "@/lib/session";
 export const metadata: Metadata = { title: "Discover" };
 
 /**
- * Rendering this page never calls TheCocktailDB. Everything shown comes from
+ * Rendering this page never calls a cocktail provider. Everything shown comes from
  * the local cache; the API is only contacted when you press a button.
  */
 export default async function DiscoverPage({
@@ -32,7 +33,17 @@ export default async function DiscoverPage({
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
-  const [cached, chain] = await Promise.all([cachedDrinkCount(), providerChain()]);
+  const [cached, chain, fetchedAt] = await Promise.all([
+    cachedDrinkCount(),
+    providerChain(),
+    lastFetchedByProvider(),
+  ]);
+  // Only the providers Discover is showing; one you have switched away from
+  // keeps its drinks, but they are not what is on the page.
+  const lastFetched = chain.flatMap((p) => {
+    const at = fetchedAt[p.id];
+    return at ? [{ id: p.id, label: p.label, iso: at.toISOString() }] : [];
+  });
 
   // Credit every provider that has data in the cache, not just the active one.
   const configured = new Set(chain.map((p) => p.id));
@@ -57,7 +68,11 @@ export default async function DiscoverPage({
         {query ? (
           <CachedSearchResults userId={user.id} query={query} activeLabel={activeLabel} />
         ) : (
-          <FromYourShelf userId={user.id} activeLabel={activeLabel} />
+          <FromYourShelf
+            userId={user.id}
+            activeLabel={activeLabel}
+            wholeCatalog={chain[0]?.capabilities.catalog ?? false}
+          />
         )}
 
         <div className="space-y-2 border-t border-bar-800 pt-4">
@@ -66,6 +81,11 @@ export default async function DiscoverPage({
               ? `${cached} cocktails saved locally. Lookups only run when you ask.`
               : "Nothing saved locally yet. Lookups only run when you ask."}
           </p>
+          {lastFetched.map((entry) => (
+            <p key={entry.id} className="text-xs text-bar-400">
+              Last fetched from {entry.label} on <LocalTime iso={entry.iso} />.
+            </p>
+          ))}
           <ClearCacheButton count={cached} />
           {attributions.map((line) => (
             <p key={line} className="text-xs text-bar-400">
@@ -143,9 +163,12 @@ async function CachedSearchResults({
 async function FromYourShelf({
   userId,
   activeLabel,
+  wholeCatalog,
 }: {
   userId: string;
   activeLabel: string;
+  /** The provider hands over everything at once, so the shelf is matched locally. */
+  wholeCatalog: boolean;
 }) {
   const result = await discoverFromCache(userId);
 
@@ -234,10 +257,22 @@ async function FromYourShelf({
       ) : null}
 
       <section className="card space-y-2 p-4">
-        <h2 className="text-sm font-medium text-bar-300">Shelf changed?</h2>
-        <p className="text-xs text-bar-400">
-          Run another lookup to pick up cocktails your newer ingredients unlock.
-        </p>
+        {wholeCatalog ? (
+          <>
+            <h2 className="text-sm font-medium text-bar-300">Want the latest recipes?</h2>
+            <p className="text-xs text-bar-400">
+              Barback keeps all of {activeLabel}&rsquo;s cocktails, so a changed shelf is
+              matched straight away. Check again to pick up any they have added since.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-sm font-medium text-bar-300">Shelf changed?</h2>
+            <p className="text-xs text-bar-400">
+              Run another lookup to pick up cocktails your newer ingredients unlock.
+            </p>
+          </>
+        )}
         <ScanButton
           label={`Check ${activeLabel} again`}
           providerLabel={activeLabel}

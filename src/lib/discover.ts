@@ -169,17 +169,15 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
       continue;
     }
 
-    // Preferred: take the whole catalog once and match locally. The
-    // alternative, querying per ingredient, is barely usable on free tiers —
-    // TheCocktailDB's free key returns a single drink per ingredient.
+    // Preferred: take the whole catalog and match locally. The alternative,
+    // querying per ingredient, is barely usable on free tiers — TheCocktailDB's
+    // free key returns a single drink per ingredient.
+    //
+    // Fetched on every press, never skipped as recent: it is one request,
+    // and a changed shelf needs no new data, so the only reason to press is
+    // to get the provider's latest recipes.
     if (provider.capabilities.catalog && provider.fetchCatalog) {
       const key = `catalog:${provider.id}`;
-      const cached = await getCachedQuery(provider.id, "catalog", key);
-      if (cached) {
-        providersUsed.add(provider.label);
-        break;
-      }
-
       try {
         const drinks = await provider.fetchCatalog();
         await cacheDrinks(drinks);

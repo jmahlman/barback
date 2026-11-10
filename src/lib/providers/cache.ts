@@ -16,7 +16,10 @@ import {
  * touching the network.
  */
 
-const DRINK_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+// Drinks themselves never expire: they stay until you fetch again or clear
+// them, and Discover says when they were last fetched. Only the record of
+// which ingredient lookups have been run goes stale, so a scan can skip the
+// ones it asked recently.
 const QUERY_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface CachedRow {
@@ -137,14 +140,6 @@ export async function getCachedDrink(key: string): Promise<ProviderDrink | null>
   return row ? rowToDrink(row) : null;
 }
 
-export async function isDrinkFresh(key: string): Promise<boolean> {
-  const row = await db.cachedDrink.findUnique({
-    where: { id: key },
-    select: { fetchedAt: true },
-  });
-  return Boolean(row && Date.now() - row.fetchedAt.getTime() < DRINK_TTL_MS);
-}
-
 /**
  * Search cached drinks by name. SQLite through Prisma has no case-insensitive
  * `contains`, so the lowercased slug is matched too.
@@ -207,6 +202,23 @@ export async function setCachedQuery(
     create: { key, ...payload },
     update: payload,
   });
+}
+
+/**
+ * When each provider was last asked for cocktails by a scan, for showing on
+ * Discover. Taken from the scans rather than the drinks, so looking up one
+ * drink by name does not make the whole catalog look freshly fetched.
+ */
+export async function lastFetchedByProvider(): Promise<Partial<Record<ProviderId, Date>>> {
+  const rows = await db.cachedFilter.findMany({ select: { key: true, fetchedAt: true } });
+  const out: Partial<Record<ProviderId, Date>> = {};
+  for (const row of rows) {
+    const provider = row.key.split("~")[0] ?? "";
+    if (!isProviderId(provider)) continue;
+    const latest = out[provider];
+    if (!latest || row.fetchedAt > latest) out[provider] = row.fetchedAt;
+  }
+  return out;
 }
 
 export async function clearCache(provider?: ProviderId): Promise<number> {

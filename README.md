@@ -110,6 +110,9 @@ entirely offline. Every outbound call is logged to the server output as
 `[upcitemdb] GET …`, so you can
 confirm this for yourself. Clear the cache from Discover or Settings.
 
+Saved cocktails never expire or update on their own. Discover shows when each
+provider was last fetched; press **Check … again** to get its latest recipes.
+
 Reading a barcode is not a lookup. The camera frames and the decoder stay in
 your browser — the decoder is served from Barback itself, not a CDN — so a
 scan only becomes a request when there is a barcode to ask about, and then it
