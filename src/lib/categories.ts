@@ -46,13 +46,6 @@ export function isCategorySlug(value: string): value is CategorySlug {
   return LABELS.has(value);
 }
 
-/// Categories whose absence should NOT stop us suggesting a drink —
-/// you can usually improvise or skip these.
-export const FORGIVING_CATEGORIES: ReadonlySet<string> = new Set([
-  "garnish",
-  "fresh",
-]);
-
 export const METHODS = [
   { slug: "shaken", label: "Shaken" },
   { slug: "stirred", label: "Stirred" },
