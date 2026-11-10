@@ -1,8 +1,10 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { drinkPageUrl } from "@/lib/providers/cocktaildb";
+import { cocktailGlassPageUrl } from "@/lib/providers/cocktail-glass-parse";
 import {
   drinkKey,
+  isProviderId,
   type ProviderDrink,
   type ProviderId,
   type ProviderIngredient,
@@ -31,6 +33,21 @@ interface CachedRow {
   ingredients: string;
 }
 
+/**
+ * The upstream page for a cached drink. Not stored, since it follows from the
+ * id; API Ninjas has no pages to link to.
+ */
+function sourceUrlFor(provider: ProviderId, externalId: string): string | null {
+  switch (provider) {
+    case "cocktaildb":
+      return drinkPageUrl(externalId);
+    case "cocktailglass":
+      return cocktailGlassPageUrl(externalId);
+    default:
+      return null;
+  }
+}
+
 export function rowToDrink(row: CachedRow): ProviderDrink {
   let ingredients: ProviderIngredient[] = [];
   try {
@@ -39,7 +56,11 @@ export function rowToDrink(row: CachedRow): ProviderDrink {
     ingredients = [];
   }
 
-  const provider = (row.provider === "apininjas" ? "apininjas" : "cocktaildb") as ProviderId;
+  // Anything unrecognized is assumed to be TheCocktailDB, which is what every
+  // row was before there was more than one provider. A known id is trusted
+  // as stored -- this used to read "not API Ninjas, so TheCocktailDB", which
+  // would have quietly re-badged a third provider's drinks.
+  const provider: ProviderId = isProviderId(row.provider) ? row.provider : "cocktaildb";
 
   return {
     provider,
@@ -53,7 +74,7 @@ export function rowToDrink(row: CachedRow): ProviderDrink {
     glass: row.glass,
     instructions: row.instructions,
     ingredients,
-    sourceUrl: provider === "cocktaildb" ? drinkPageUrl(row.externalId) : null,
+    sourceUrl: sourceUrlFor(provider, row.externalId),
   };
 }
 
@@ -80,9 +101,18 @@ export async function cacheDrinks(drinks: ProviderDrink[]): Promise<void> {
   }
 }
 
-/** Everything cached, for matching against the shelf. No network. */
-export async function allCachedDrinks(): Promise<ProviderDrink[]> {
-  const rows = await db.cachedDrink.findMany();
+/**
+ * Everything cached, for matching against the shelf. No network.
+ *
+ * Pass `providers` to read only those providers' drinks; the cache keeps every
+ * provider's catalog, including ones you have since switched away from.
+ */
+export async function allCachedDrinks(
+  providers?: readonly ProviderId[],
+): Promise<ProviderDrink[]> {
+  const rows = await db.cachedDrink.findMany(
+    providers ? { where: { provider: { in: [...providers] } } } : undefined,
+  );
   return rows.map(rowToDrink);
 }
 
@@ -119,12 +149,16 @@ export async function isDrinkFresh(key: string): Promise<boolean> {
  * Search cached drinks by name. SQLite through Prisma has no case-insensitive
  * `contains`, so the lowercased slug is matched too.
  */
-export async function searchCachedDrinks(query: string): Promise<ProviderDrink[]> {
+export async function searchCachedDrinks(
+  query: string,
+  providers?: readonly ProviderId[],
+): Promise<ProviderDrink[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
   const rows = await db.cachedDrink.findMany({
     where: {
+      ...(providers ? { provider: { in: [...providers] } } : {}),
       OR: [
         { name: { contains: trimmed } },
         { slug: { contains: trimmed.toLowerCase() } },

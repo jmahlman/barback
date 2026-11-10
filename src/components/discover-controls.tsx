@@ -7,15 +7,18 @@ import { SearchIcon, SparkIcon } from "@/components/icons";
 import { ConfirmButton } from "@/components/confirm-button";
 
 /**
- * The only two controls that reach TheCocktailDB. Both require a click, so
- * simply opening or refreshing Discover never calls the API.
+ * The only two controls that reach a cocktail provider. Both require a click,
+ * so simply opening or refreshing Discover never calls one.
  */
 
 export function ScanButton({
-  label = "Check TheCocktailDB now",
+  label = "Check now",
+  providerLabel = "the cocktail provider",
   variant = "primary",
 }: {
   label?: string;
+  /** Who is being asked, for the line shown while it waits. */
+  providerLabel?: string;
   variant?: "primary" | "secondary";
 }) {
   const router = useRouter();
@@ -46,7 +49,7 @@ export function ScanButton({
         className={variant === "primary" ? "btn-primary w-full" : "btn-secondary w-full"}
       >
         <SparkIcon className="size-5" />
-        {pending ? "Asking TheCocktailDB…" : label}
+        {pending ? `Asking ${providerLabel}…` : label}
       </button>
 
       {message ? (
@@ -74,7 +77,13 @@ export function ScanButton({
 }
 
 /** Searches the local cache as you type; only the button calls out. */
-export function DiscoverSearchForm({ defaultQuery = "" }: { defaultQuery?: string }) {
+export function DiscoverSearchForm({
+  defaultQuery = "",
+  providerLabel = "the cocktail provider",
+}: {
+  defaultQuery?: string;
+  providerLabel?: string;
+}) {
   const router = useRouter();
   const [value, setValue] = useState(defaultQuery);
   const [pending, startTransition] = useTransition();
@@ -117,7 +126,7 @@ export function DiscoverSearchForm({ defaultQuery = "" }: { defaultQuery?: strin
           disabled={!value.trim()}
           className="text-xs text-brass-300 underline-offset-4 hover:underline disabled:opacity-40 disabled:no-underline"
         >
-          Not here? Look it up on TheCocktailDB →
+          Not here? Look it up on {providerLabel} →
         </button>
       </form>
     </div>

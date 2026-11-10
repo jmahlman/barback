@@ -50,7 +50,7 @@ export function RecipeBrowser({ recipes }: { recipes: RecipeListEntry[] }) {
       <EmptyState
         icon={<BookIcon className="size-12" />}
         title="No recipes yet"
-        body="Write up a drink you already make, or import one from TheCocktailDB on the Discover tab."
+        body="Write up a drink you already make, or save one from the Discover tab."
         action={
           <div className="flex flex-wrap justify-center gap-2">
             <Link href="/recipes/new" className="btn-primary">

@@ -15,6 +15,12 @@ export interface ProviderIngredient {
   slug: string;
   /** Measure exactly as published, e.g. "2 oz". Never invented. */
   measure: string | null;
+  /**
+   * A garnish rather than part of the drink. Garnishes never stop a drink
+   * from being makeable. Only providers that separate them say so; for the
+   * rest a garnish is just another ingredient.
+   */
+  garnish?: boolean;
 }
 
 export interface ProviderDrink {
@@ -36,7 +42,19 @@ export interface ProviderDrink {
   sourceUrl: string | null;
 }
 
-export type ProviderId = "cocktaildb" | "apininjas";
+/** Every provider Barback knows, in the order Settings lists them. */
+export const PROVIDER_IDS = ["cocktailglass", "cocktaildb", "apininjas"] as const;
+
+export type ProviderId = (typeof PROVIDER_IDS)[number];
+
+/**
+ * Is this one of ours? Kept here rather than in the registry so that modules
+ * the registry depends on -- the cache, for one -- can ask without an import
+ * cycle.
+ */
+export function isProviderId(value: string): value is ProviderId {
+  return (PROVIDER_IDS as readonly string[]).includes(value);
+}
 
 export interface ProviderCapabilities {
   /** Supplies photographs. */
@@ -98,7 +116,7 @@ export function parseDrinkKey(
   const provider = key.slice(0, index);
   const externalId = key.slice(index + 1);
   if (!externalId) return null;
-  if (provider !== "cocktaildb" && provider !== "apininjas") return null;
+  if (!isProviderId(provider)) return null;
   return { provider, externalId };
 }
 

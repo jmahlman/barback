@@ -5,7 +5,14 @@ import { useState, useTransition } from "react";
 import { fetchDrinkNow } from "@/actions/discover";
 import { SparkIcon } from "@/components/icons";
 
-export function FetchDrinkButton({ drinkKey }: { drinkKey: string }) {
+export function FetchDrinkButton({
+  drinkKey,
+  providerLabel,
+}: {
+  drinkKey: string;
+  /** The provider this drink came from, which is the one that gets asked. */
+  providerLabel: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +36,7 @@ export function FetchDrinkButton({ drinkKey }: { drinkKey: string }) {
         className="btn-primary"
       >
         <SparkIcon className="size-5" />
-        {pending ? "Fetching…" : "Look it up on TheCocktailDB"}
+        {pending ? "Fetching…" : `Look it up on ${providerLabel}`}
       </button>
       {error ? (
         <p role="alert" className="text-xs text-cherry-400">

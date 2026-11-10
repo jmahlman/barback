@@ -2,11 +2,16 @@
  * Picking a provider's artwork at a sensible size.
  *
  * TheCocktailDB serves sized variants by appending /small, /medium or /large
- * to the thumbnail URL. Other providers have no imagery, so this is a no-op
- * for them.
+ * to the thumbnail URL:
  *
  *   /small   200x200     /medium  350x350
  *   /large   500x500     (none)   700x700
+ *
+ * cocktail.glass keeps two sizes under different directories:
+ *
+ *   /images/responsive/320/<slug>.webp     /images/responsive/640/<slug>.webp
+ *
+ * API Ninjas has no imagery, so this is a no-op for it.
  */
 
 /**
@@ -32,8 +37,26 @@ export function drinkImage(
   renderedPx: number = MAX_DRINK_IMAGE_PX,
 ): string | null {
   if (!thumbUrl) return null;
+
+  // cocktail.glass: swap the size directory. 320 already clears the cap.
+  if (/cocktail\.glass\/images\/responsive\/\d+\//.test(thumbUrl)) {
+    const size = renderedPx <= 320 ? "320" : "640";
+    return thumbUrl.replace(/\/responsive\/\d+\//, `/responsive/${size}/`);
+  }
+
   if (!/thecocktaildb\.com/.test(thumbUrl)) return thumbUrl;
   // Already pinned to a variant by whoever stored it.
   if (/\/(small|medium|large)$/.test(thumbUrl)) return thumbUrl;
   return `${thumbUrl}/${renderedPx <= 200 ? "small" : "medium"}`;
+}
+
+/**
+ * The size of a provider's largest picture, for the enlarged view.
+ *
+ * Drawing past this would only blow the image up, so the viewer stops here.
+ */
+export function drinkImageFullPx(thumbUrl: string | null | undefined): number {
+  if (thumbUrl && /cocktail\.glass\//.test(thumbUrl)) return 640;
+  // TheCocktailDB's originals.
+  return 700;
 }

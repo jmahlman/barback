@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "www.thecocktaildb.com" },
       { protocol: "https", hostname: "thecocktaildb.com" },
+      { protocol: "https", hostname: "cocktail.glass", pathname: "/images/**" },
     ],
   },
   experimental: {

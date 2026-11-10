@@ -11,11 +11,13 @@ import { prettifyIngredient } from "@/lib/ingredients";
 import {
   allCachedDrinks,
   cacheDrinks,
+  searchCachedDrinks,
   getCachedQuery,
   setCachedQuery,
 } from "@/lib/providers/cache";
 import { providerChain } from "@/lib/providers/registry";
 import { ProviderError, type ProviderDrink } from "@/lib/providers/types";
+import { onePerCocktail } from "@/lib/providers/visible";
 
 /** Categories worth querying upstream — a base spirit anchors most drinks. */
 const ANCHOR_CATEGORIES = new Set(["spirit", "liqueur", "vermouth", "wine"]);
@@ -85,6 +87,9 @@ function assemble(
         name: ingredient.name,
         slug: ingredient.slug,
         measure: ingredient.measure,
+        // Only some providers list garnishes apart; for the rest this is
+        // simply absent, and the ingredient counts like any other.
+        garnish: ingredient.garnish ?? false,
       })),
       inventory,
     ),
@@ -112,6 +117,21 @@ function assemble(
 }
 
 /**
+ * The cached drinks Discover shows: only from the providers in use, and one
+ * copy of each cocktail, from whichever of them you prefer. No network.
+ */
+export async function visibleCachedDrinks(): Promise<ProviderDrink[]> {
+  const ids = (await providerChain()).map((p) => p.id);
+  return onePerCocktail(await allCachedDrinks(ids), ids);
+}
+
+/** Search the visible cached drinks by name. No network. */
+export async function searchVisibleDrinks(query: string): Promise<ProviderDrink[]> {
+  const ids = (await providerChain()).map((p) => p.id);
+  return onePerCocktail(await searchCachedDrinks(query, ids), ids);
+}
+
+/**
  * Match the shelf against drinks already cached locally.
  * Makes NO network requests, so it is safe to render on page load.
  */
@@ -119,7 +139,7 @@ export async function discoverFromCache(userId: string): Promise<DiscoverResult>
   const { items, inventory, savedKeys } = await loadContext(userId);
   if (items.length === 0) return { ...EMPTY, emptyInventory: true };
 
-  const drinks = await allCachedDrinks();
+  const drinks = await visibleCachedDrinks();
   if (drinks.length === 0) return EMPTY;
 
   return assemble(drinks, inventory, savedKeys, {});
@@ -203,7 +223,7 @@ export async function scanForCocktails(userId: string): Promise<DiscoverResult> 
     if (!providerFailed) break;
   }
 
-  const everything = await allCachedDrinks();
+  const everything = await visibleCachedDrinks();
 
   if (everything.length === 0) {
     return {

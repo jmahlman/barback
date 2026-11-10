@@ -434,6 +434,7 @@ export async function importExternalRecipe(
           slug: ingredient.slug,
           // Keep the measure exactly as published.
           amount: ingredient.measure,
+          garnish: ingredient.garnish ?? false,
           position: index,
         })),
       },

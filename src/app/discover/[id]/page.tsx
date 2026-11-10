@@ -6,7 +6,7 @@ import { AddMissingButton } from "@/components/recipe-detail-actions";
 import { EmptyState } from "@/components/empty-state";
 import { FetchDrinkButton } from "@/components/fetch-drink-button";
 import { CheckIcon, GlassIcon, SparkIcon, XIcon } from "@/components/icons";
-import { drinkImage, MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
+import { drinkImage, drinkImageFullPx, MAX_DRINK_IMAGE_PX } from "@/lib/providers/images";
 import { getCachedDrink } from "@/lib/providers/cache";
 import { getProvider } from "@/lib/providers/registry";
 import { parseDrinkKey } from "@/lib/providers/types";
@@ -60,7 +60,10 @@ export default async function DiscoverDetailPage({
             body={`Barback has not saved this drink yet. Nothing is requested from ${providerLabel} until you ask for it.`}
             action={
               provider?.capabilities.stableIds ? (
-                <FetchDrinkButton drinkKey={id} />
+                <FetchDrinkButton
+                  drinkKey={id}
+                  providerLabel={provider?.label ?? "the provider"}
+                />
               ) : null
             }
           />
@@ -71,7 +74,12 @@ export default async function DiscoverDetailPage({
   }
 
   const evaluation = evaluateRecipe(
-    drink.ingredients.map((i) => ({ name: i.name, slug: i.slug, measure: i.measure })),
+    drink.ingredients.map((i) => ({
+      name: i.name,
+      slug: i.slug,
+      measure: i.measure,
+      garnish: i.garnish ?? false,
+    })),
     inventory,
   );
 
@@ -79,6 +87,7 @@ export default async function DiscoverDetailPage({
   // Enlarging is an explicit request, so it gets the provider's original
   // rather than the capped copy the page draws.
   const fullImage = drink.thumbUrl?.trim() || image;
+  const fullPx = drinkImageFullPx(drink.thumbUrl);
   const missingNames = evaluation.missing.map((m) => m.name);
 
   return (
@@ -102,11 +111,10 @@ export default async function DiscoverDetailPage({
               // Let Next fetch and re-serve the provider's picture, so the
               // browser never talks to them directly.
               unoptimized={false}
-              // TheCocktailDB's originals are 700px square. Both numbers are
-              // needed: one decides which variant is fetched, the other how
-              // large it is allowed to be drawn.
-              fullSizes="(min-width: 768px) 700px, 100vw"
-              fullMaxPx={700}
+              // Both numbers are needed: one decides which variant is
+              // fetched, the other how large it is allowed to be drawn.
+              fullSizes={`(min-width: 768px) ${fullPx}px, 100vw`}
+              fullMaxPx={fullPx}
               priority
             />
           </div>

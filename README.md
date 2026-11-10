@@ -106,7 +106,8 @@ when you press one of these:
 
 Everything fetched is cached in your own database, so afterwards Discover works
 entirely offline. Every outbound call is logged to the server output as
-`[cocktaildb] GET …`, `[apininjas] GET …` or `[upcitemdb] GET …`, so you can
+`[cocktailglass] GET …`, `[cocktaildb] GET …`, `[apininjas] GET …` or
+`[upcitemdb] GET …`, so you can
 confirm this for yourself. Clear the cache from Discover or Settings.
 
 Reading a barcode is not a lookup. The camera frames and the decoder stay in
@@ -127,34 +128,39 @@ demand. That is the only request Barback ever makes without being asked.
 
 ## Choosing a provider
 
-Two services are supported. Pick one on the Settings page.
+Three services are supported. Pick one on the Settings page.
 
-| | TheCocktailDB | API Ninjas |
-| --- | --- | --- |
-| Photos | yes | no |
-| Glass, category, alcoholic | yes | no |
-| Measures | separate field | embedded in the text, parsed out |
-| Stable links to a drink | yes | no — matched by name |
-| Results per search | unlimited | 10 |
-| Multi-ingredient search | premium only | yes |
-| Ingredient search, free key | **1 result** | up to 10 |
-| Free tier | non-commercial, key `1` | non-commercial, monthly quota |
+| | cocktail.glass | TheCocktailDB | API Ninjas |
+| --- | --- | --- | --- |
+| Key needed | **no** | free key `1` | yes |
+| Recipes | 500 | about 440 | — (search only) |
+| Photos | yes | yes | no |
+| Glass, category, alcoholic | yes | yes | no |
+| Measures | **numbers and units** | separate text field | embedded in the text, parsed out |
+| Garnishes | **listed separately** | mixed in with ingredients | mixed in with ingredients |
+| Stable links to a drink | yes | yes | no — matched by name |
+| Whole catalog | **one request** | 36 requests | no |
+| Free tier | no rate limits | non-commercial | non-commercial, monthly quota |
 
-**TheCocktailDB is the default and the better fit.** Barback is a visual
-recipe app, and it is the only one of the two with photographs, glassware and
-stable per-drink links.
+**cocktail.glass is the default.** It needs no key, hands over all 500
+recipes in a single request, and publishes them as structured data: an
+amount, a unit and a type for every ingredient, rather than text to be
+picked apart. Garnishes come in their own list, so a missing lime wheel never
+stops Barback telling you a drink is makeable. Of the three, it is the one
+your shelf matches against most accurately.
 
-Its free key does cripple one thing: `filter.php?i=<ingredient>` returns a
-single drink, and filtering on several ingredients at once is premium-only.
-Searching your shelf one ingredient at a time would therefore return a
-handful of arbitrary cocktails. Barback works around it by downloading the
-whole catalog once — about 440 drinks, complete with ingredients and
-measures — and matching locally from then on. That is roughly 36 requests,
-made once, and everything afterwards is offline.
+It offers no per-recipe or search endpoint, only the whole catalog, so
+everything — Discover, the "look it up" box, saving a drink — reads that one
+file. Barback keeps a local copy of it **with the site's permission**, and
+matches against that copy offline from then on.
 
-API Ninjas is worth having as an alternative: it is the only one that can
-filter on several ingredients at once, and it is a useful second source if
-TheCocktailDB is down or you hit its limits. Two caveats worth knowing:
+**TheCocktailDB** is a good second choice, with photos and stable links. Its
+free key cripples one thing: `filter.php?i=<ingredient>` returns a single
+drink, and filtering on several ingredients at once is premium-only. Barback
+works around it by downloading the whole catalog a letter at a time — 36
+requests, made once — and matching locally from then on.
+
+**API Ninjas** is worth having as an alternative source. Two caveats:
 
 - Its ingredient search matches substrings, so asking for `gin` returns drinks
   whose only match is *ginger ale*. Barback filters those out after fetching,
@@ -163,16 +169,21 @@ TheCocktailDB is down or you hit its limits. Two caveats worth knowing:
   (`"1 1/2 oz Tequila, Lunazul Reposado"`). Barback parses these, keeping the
   measure exactly as published, but it is inference rather than structured data.
 
-Fallback between providers is **off by default**. The two return noticeably
+Measures are kept **exactly as each service publishes them**, so
+cocktail.glass recipes are in milliliters and TheCocktailDB's are mostly in
+ounces.
+
+Fallback between providers is **off by default**. They return noticeably
 different data, and switching silently would change your results for reasons
 the page does not show. Turn it on in Settings if you would rather have an
 answer than an error.
 
 ## Settings
 
-The Settings page holds the provider choice and both API keys. Values saved
-there live in your database and take precedence over environment variables, so
-you can rotate a key without redeploying. Keys are never sent back to the
+The Settings page holds the provider choice and the API keys for the two
+providers that need one. Values saved there live in your database and take
+precedence over environment variables, so you can rotate a key or switch
+provider without redeploying. Keys are never sent back to the
 browser — only a masked form showing the last four characters.
 
 Settings belong to the **instance owner**, which is simply the first account
@@ -271,8 +282,8 @@ overrides it.
 | `AUTH_PROXY_ADMIN_GROUP` | — | `proxy` mode: group mapped to admin |
 | `SINGLE_USER_NAME` | `You` | `none` mode: name, only if no account exists yet |
 | `AUTH_LOCAL_ADMIN_FALLBACK` | `true` | `false` disables break-glass admin sign-in |
-| `COCKTAIL_PROVIDER` | `cocktaildb` | `cocktaildb` or `apininjas` |
-| `COCKTAIL_PROVIDER_FALLBACK` | `false` | Try the other provider on failure |
+| `COCKTAIL_PROVIDER` | `cocktailglass` | `cocktailglass`, `cocktaildb` or `apininjas` |
+| `COCKTAIL_PROVIDER_FALLBACK` | `false` | Try the others on failure |
 | `COCKTAILDB_API_KEY` | `1` | TheCocktailDB key |
 | `API_NINJAS_API_KEY` | — | API Ninjas key |
 | `BARCODE_LOOKUP` | `true` | `false` stops barcode lookups; scanning still works |
@@ -868,8 +879,11 @@ rule in `src/app/globals.css`.
 
 ### Outside services
 
-Recipes and imagery come from [TheCocktailDB](https://www.thecocktaildb.com/)
-and [API Ninjas](https://api-ninjas.com/api/cocktail) when you ask for them.
+Recipes and imagery come from [cocktail.glass](https://cocktail.glass/) by
+default, or from [TheCocktailDB](https://www.thecocktaildb.com/) or
+[API Ninjas](https://api-ninjas.com/api/cocktail) if you choose them, and only
+when you ask. Barback keeps a local copy of cocktail.glass's catalog with the
+site's permission.
 Product details for a scanned barcode come from
 [UPCitemdb](https://www.upcitemdb.com/). All of it is cached in your own
 database, and each service has its own terms — the free tiers are for
@@ -881,9 +895,10 @@ services** lists each one in the app, with what it is sent and when.
 
 ## Credits
 
-Recipe data and imagery: [TheCocktailDB](https://www.thecocktaildb.com/) and
+Recipe data and imagery: [cocktail.glass](https://cocktail.glass/),
+[TheCocktailDB](https://www.thecocktaildb.com/) and
 [API Ninjas](https://api-ninjas.com/api/cocktail). Barback credits whichever
-providers are configured, on Discover and on each drink.
+provider a drink came from, on Discover and on each saved recipe.
 
 Barcode product data: [UPCitemdb](https://www.upcitemdb.com/). Barcodes
 themselves are read on your own device by

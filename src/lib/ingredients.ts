@@ -90,6 +90,8 @@ const ALIASES: Record<string, string> = {
   curacao: "orange liqueur",
   "blue curacao": "blue curacao",
   "orange curacao": "orange liqueur",
+  // The same, spelled with its cedilla, which is how cocktail.glass has it.
+  "orange curaçao": "orange liqueur",
   "dry curacao": "orange liqueur",
   "maraschino liqueur": "maraschino",
   luxardo: "maraschino",
@@ -157,6 +159,10 @@ const ALIASES: Record<string, string> = {
   "maraschino cherries": "cherry",
   cherries: "cherry",
   "cocktail cherry": "cherry",
+  // A rim is the pantry staple it is made of, so a salt rim is assumed on
+  // hand the way salt is. cocktail.glass lists these as garnishes.
+  "salt rim": "salt",
+  "sugar rim": "sugar",
   olive: "olives",
   olives: "olives",
   "mint sprig": "mint",

@@ -47,7 +47,10 @@ const DEFAULTS: Record<SettingKey, string> = {
   // "1" is TheCocktailDB's free development key.
   [SETTING_KEYS.cocktaildbApiKey]: "1",
   [SETTING_KEYS.apiNinjasApiKey]: "",
-  [SETTING_KEYS.preferredProvider]: "cocktaildb",
+  // The default because it needs no key and has the best-structured data.
+  // Only affects instances that have never chosen; a choice saved from the
+  // Settings page is kept.
+  [SETTING_KEYS.preferredProvider]: "cocktailglass",
   [SETTING_KEYS.fallbackEnabled]: "false",
   // Open by default so a fresh instance is usable, and closable the moment
   // the owner has their account.

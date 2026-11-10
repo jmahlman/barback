@@ -46,7 +46,7 @@ export async function saveProviderSettings(formData: FormData): Promise<ActionRe
   }
 
   const parsed = schema.safeParse({
-    preferredProvider: String(formData.get("preferredProvider") ?? "cocktaildb"),
+    preferredProvider: String(formData.get("preferredProvider") ?? "cocktailglass"),
     fallbackEnabled: formData.get("fallbackEnabled") === "on",
     cocktaildbApiKey: String(formData.get("cocktaildbApiKey") ?? ""),
     apiNinjasApiKey: String(formData.get("apiNinjasApiKey") ?? ""),
@@ -81,12 +81,17 @@ export async function clearApiKey(providerId: string): Promise<ActionResult> {
   }
   if (!isProviderId(providerId)) return { ok: false, error: "Unknown provider." };
 
-  await setSetting(
-    providerId === "cocktaildb"
-      ? SETTING_KEYS.cocktaildbApiKey
-      : SETTING_KEYS.apiNinjasApiKey,
-    "",
-  );
+  // A ternary used to pick between the two keys, so any third provider would
+  // have cleared API Ninjas' key by mistake.
+  const keyFor: Record<typeof providerId, (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS] | null> = {
+    cocktailglass: null,
+    cocktaildb: SETTING_KEYS.cocktaildbApiKey,
+    apininjas: SETTING_KEYS.apiNinjasApiKey,
+  };
+  const settingKey = keyFor[providerId];
+  if (!settingKey) return { ok: false, error: "That provider has no key to remove." };
+
+  await setSetting(settingKey, "");
 
   revalidatePath("/settings");
   revalidatePath("/discover");

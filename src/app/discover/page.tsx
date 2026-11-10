@@ -9,8 +9,8 @@ import {
 } from "@/components/discover-controls";
 import { EmptyState } from "@/components/empty-state";
 import { BottleIcon, CartIcon, SparkIcon } from "@/components/icons";
-import { cachedDrinkCount, searchCachedDrinks } from "@/lib/providers/cache";
-import { discoverFromCache, type DiscoverEntry } from "@/lib/discover";
+import { cachedDrinkCount } from "@/lib/providers/cache";
+import { discoverFromCache, searchVisibleDrinks, type DiscoverEntry } from "@/lib/discover";
 import { PROVIDER_LIST, providerChain } from "@/lib/providers/registry";
 import { evaluateRecipe } from "@/lib/matching";
 import { loadInventoryIndex } from "@/lib/recipe-queries";
@@ -52,12 +52,12 @@ export default async function DiscoverPage({
         }
       />
       <PageBody>
-        <DiscoverSearchForm defaultQuery={query} />
+        <DiscoverSearchForm defaultQuery={query} providerLabel={activeLabel} />
 
         {query ? (
           <CachedSearchResults userId={user.id} query={query} activeLabel={activeLabel} />
         ) : (
-          <FromYourShelf userId={user.id} cached={cached} activeLabel={activeLabel} />
+          <FromYourShelf userId={user.id} activeLabel={activeLabel} />
         )}
 
         <div className="space-y-2 border-t border-bar-800 pt-4">
@@ -96,7 +96,7 @@ async function CachedSearchResults({
   activeLabel: string;
 }) {
   const [drinks, inventory, saved] = await Promise.all([
-    searchCachedDrinks(query),
+    searchVisibleDrinks(query),
     loadInventoryIndex(userId),
     savedExternalIds(userId),
   ]);
@@ -118,6 +118,7 @@ async function CachedSearchResults({
         name: i.name,
         slug: i.slug,
         measure: i.measure,
+        garnish: i.garnish ?? false,
       })),
       inventory,
     ),
@@ -141,11 +142,9 @@ async function CachedSearchResults({
 
 async function FromYourShelf({
   userId,
-  cached,
   activeLabel,
 }: {
   userId: string;
-  cached: number;
   activeLabel: string;
 }) {
   const result = await discoverFromCache(userId);
@@ -165,13 +164,16 @@ async function FromYourShelf({
     );
   }
 
-  if (cached === 0) {
+  // Counted from what Discover shows, not from the whole cache: drinks saved
+  // from a provider you have since switched away from are not shown, so a
+  // cache holding only those still means nothing has been checked yet.
+  if (result.considered === 0) {
     return (
       <EmptyState
         icon={<SparkIcon className="size-12" />}
         title="Ready when you are"
         body={`Barback will ask ${activeLabel} which cocktails your shelf can cover, then keep the answers locally so this page works offline afterwards.`}
-        action={<ScanButton label={`Check ${activeLabel} now`} />}
+        action={<ScanButton label={`Check ${activeLabel} now`} providerLabel={activeLabel} />}
       />
     );
   }
@@ -236,7 +238,11 @@ async function FromYourShelf({
         <p className="text-xs text-bar-400">
           Run another lookup to pick up cocktails your newer ingredients unlock.
         </p>
-        <ScanButton label={`Check ${activeLabel} again`} variant="secondary" />
+        <ScanButton
+          label={`Check ${activeLabel} again`}
+          providerLabel={activeLabel}
+          variant="secondary"
+        />
       </section>
     </div>
   );

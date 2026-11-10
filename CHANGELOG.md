@@ -11,7 +11,32 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
-Nothing yet.
+**cocktail.glass is the new default recipe source.** Five hundred cocktails
+in a single download, with no key to sign up for, and with the site's
+permission for Barback to keep a local copy. Its data is structured rather
+than written out as text — every ingredient has an amount, a unit and a type —
+and garnishes come in their own list, so a missing lime wheel never stops a
+drink showing as makeable. TheCocktailDB and API Ninjas are still there,
+under Settings, if you prefer either.
+
+**If you have ever saved the Settings page, you are still on TheCocktailDB.**
+A choice saved there is kept, deliberately, so switching is one click in
+Settings → Cocktail data. New instances start on cocktail.glass.
+
+Measures are shown exactly as each service publishes them, so cocktail.glass
+recipes are in milliliters.
+
+Discover now shows each cocktail once. Switching providers keeps the old
+provider's saved cocktails (so switching back costs nothing), and about a
+hundred classics are in both catalogs, so a Margarita could have appeared
+twice. Discover now shows only the providers you are using, and where two
+of them have the same drink, the copy from the one you prefer.
+
+The published `docker-compose.yml` used to force TheCocktailDB into the
+container environment for anyone who had not set `COCKTAIL_PROVIDER`, which
+would have kept everyone on it regardless of the default. It now defaults to
+cocktail.glass too.
+
 
 ## 0.2.1
 

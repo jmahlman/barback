@@ -42,7 +42,7 @@ services:
       # Cocktail data. These seed the Settings page; anything saved there
       # takes precedence, so you can change a key without redeploying.
       # Lookups only run when you press a button, never automatically.
-      COCKTAIL_PROVIDER: "${COCKTAIL_PROVIDER:-cocktaildb}"
+      COCKTAIL_PROVIDER: "${COCKTAIL_PROVIDER:-cocktailglass}"
       COCKTAIL_PROVIDER_FALLBACK: "${COCKTAIL_PROVIDER_FALLBACK:-false}"
       COCKTAILDB_API_KEY: "${COCKTAILDB_API_KEY:-1}"
       API_NINJAS_API_KEY: "${API_NINJAS_API_KEY:-}"

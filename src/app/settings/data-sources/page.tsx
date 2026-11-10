@@ -43,10 +43,22 @@ const SERVICES: Service[] = [
     termsLabel: "UPCitemdb terms of service",
   },
   {
+    name: "cocktail.glass",
+    href: "https://cocktail.glass/",
+    purpose:
+      "The default source of cocktail recipes and photographs: the catalog Discover matches your shelf against, and the drinks you can save to your book.",
+    sends:
+      "A single request for the whole catalog, and nothing about you — no key, no account, never your inventory. Searches and lookups are answered from that copy. Only on an explicit button press.",
+    limits:
+      "No key and no rate limits. Barback keeps a local copy of the catalog with the site's permission, so matching works offline once it has been fetched.",
+    termsHref: "https://cocktail.glass/terms-of-service/",
+    termsLabel: "cocktail.glass terms",
+  },
+  {
     name: "TheCocktailDB",
     href: "https://www.thecocktaildb.com/",
     purpose:
-      "Cocktail recipes and photographs, and the catalog Discover matches your shelf against.",
+      "An alternative source of cocktail recipes and photographs, if you choose it in Settings.",
     sends:
       "A drink name, an ingredient, or a request for the catalog. Never your inventory. Only on an explicit button press.",
     limits:

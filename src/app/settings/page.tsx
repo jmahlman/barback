@@ -7,6 +7,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ChevronRightIcon } from "@/components/icons";
 import { isOwner } from "@/lib/owner";
 import { PROVIDER_LIST } from "@/lib/providers/registry";
+import type { ProviderId } from "@/lib/providers/types";
 import { cachedCountsByProvider } from "@/lib/providers/cache";
 import { cachedProductCounts } from "@/lib/products/cache";
 import { readQuota, remainingLookups } from "@/lib/products/quota";
@@ -37,7 +38,21 @@ import {
 
 export const metadata: Metadata = { title: "Settings" };
 
-const PROVIDER_META: Record<string, { signupUrl: string; keyField: string; settingKey: typeof SETTING_KEYS[keyof typeof SETTING_KEYS] }> = {
+type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
+
+/**
+ * Where each provider's key lives, if it has one.
+ *
+ * Keyed by ProviderId rather than by string, so that adding a provider and
+ * forgetting it here fails the typecheck. It used to be a plain string map,
+ * which compiled happily and then crashed this page at runtime.
+ */
+const PROVIDER_META: Record<
+  ProviderId,
+  { signupUrl: string; keyField: string; settingKey: SettingKey } | null
+> = {
+  // No key and no sign-up.
+  cocktailglass: null,
   cocktaildb: {
     signupUrl: "https://www.thecocktaildb.com/api.php",
     keyField: "cocktaildbApiKey",
@@ -173,8 +188,8 @@ export default async function SettingsPage() {
   const providers: ProviderView[] = await Promise.all(
     PROVIDER_LIST.map(async (provider) => {
       const meta = PROVIDER_META[provider.id];
-      const key = await getSetting(meta.settingKey);
-      const source = await getSettingSource(meta.settingKey);
+      const key = meta ? await getSetting(meta.settingKey) : "";
+      const source = meta ? await getSettingSource(meta.settingKey) : "default";
       return {
         id: provider.id,
         label: provider.label,
@@ -182,11 +197,12 @@ export default async function SettingsPage() {
         capabilities: provider.capabilities,
         // Only ever a masked form reaches the browser.
         maskedKey: maskSecret(key),
-        configured: Boolean(key),
+        configured: await provider.isConfigured(),
+        needsKey: meta !== null,
         source,
         cachedCount: counts[provider.id] ?? 0,
-        signupUrl: meta.signupUrl,
-        keyField: meta.keyField,
+        signupUrl: meta?.signupUrl ?? null,
+        keyField: meta?.keyField ?? null,
       };
     }),
   );

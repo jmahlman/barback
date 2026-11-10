@@ -23,10 +23,12 @@ export interface ProviderView {
   /** Masked form of the stored key, empty when none. */
   maskedKey: string;
   configured: boolean;
+  /** False for a provider that works without signing up for anything. */
+  needsKey: boolean;
   source: "database" | "environment" | "default";
   cachedCount: number;
-  signupUrl: string;
-  keyField: string;
+  signupUrl: string | null;
+  keyField: string | null;
 }
 
 const SOURCE_LABEL: Record<ProviderView["source"], string> = {
@@ -113,7 +115,12 @@ export function SettingsForm({
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-bar-200">{provider.label}</span>
-                    {provider.configured ? (
+                    {!provider.needsKey ? (
+                      <span className="chip border-citrus-400/40 text-citrus-400">
+                        <CheckIcon className="size-3" />
+                        no key needed
+                      </span>
+                    ) : provider.configured ? (
                       <span className="chip border-citrus-400/40 text-citrus-400">
                         <CheckIcon className="size-3" />
                         key {SOURCE_LABEL[provider.source]}
@@ -132,6 +139,9 @@ export function SettingsForm({
                     <Capability on={provider.capabilities.images}>photos</Capability>
                     <Capability on={provider.capabilities.stableIds}>
                       stable links
+                    </Capability>
+                    <Capability on={provider.capabilities.catalog}>
+                      whole catalog
                     </Capability>
                     <Capability on={provider.capabilities.multiIngredientFilter}>
                       multi-ingredient search
@@ -155,11 +165,11 @@ export function SettingsForm({
               className="mt-0.5 size-4 accent-brass-400"
             />
             <span>
-              Fall back to the other provider when the first one fails
+              Fall back to the others when your chosen provider fails
               <span className="mt-0.5 block text-xs text-bar-400">
-                Off by default. The two services return quite different data, so
-                a silent switch can change your results for reasons the page
-                does not show.
+                Off by default. The services return quite different data, so a
+                silent switch can change your results for reasons the page does
+                not show.
               </span>
             </span>
           </label>
@@ -168,41 +178,55 @@ export function SettingsForm({
         {/* Keys */}
         <section className="space-y-3">
           <div>
-            <h2 className="font-display text-xl text-bar-200">API keys</h2>
+            <h2 className="font-display text-xl text-bar-200">Keys and connections</h2>
             <p className="mt-1 text-sm text-bar-400">
-              Stored in your own database. Saved values take precedence over
-              environment variables, so you can change one without redeploying.
+              Keys are stored in your own database. Saved values take precedence
+              over environment variables, so you can change one without
+              redeploying.
             </p>
           </div>
 
           {providers.map((provider) => (
             <div key={provider.id} className="card space-y-3 p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <label className="label mb-0" htmlFor={provider.keyField}>
-                  {provider.label} key
-                </label>
-                <a
-                  href={provider.signupUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-xs text-brass-300 underline-offset-4 hover:underline"
-                >
-                  Get a key
-                </a>
-              </div>
+              {provider.needsKey && provider.keyField ? (
+                <>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <label className="label mb-0" htmlFor={provider.keyField}>
+                      {provider.label} key
+                    </label>
+                    {provider.signupUrl ? (
+                      <a
+                        href={provider.signupUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="text-xs text-brass-300 underline-offset-4 hover:underline"
+                      >
+                        Get a key
+                      </a>
+                    ) : null}
+                  </div>
 
-              <PasswordField
-                id={provider.keyField}
-                name={provider.keyField}
-                autoComplete="off"
-                reveals="key"
-                className="field font-mono"
-                placeholder={
-                  provider.maskedKey
-                    ? `Currently ${provider.maskedKey} — type to replace`
-                    : "Paste your key"
-                }
-              />
+                  <PasswordField
+                    id={provider.keyField}
+                    name={provider.keyField}
+                    autoComplete="off"
+                    reveals="key"
+                    className="field font-mono"
+                    placeholder={
+                      provider.maskedKey
+                        ? `Currently ${provider.maskedKey} — type to replace`
+                        : "Paste your key"
+                    }
+                  />
+                </>
+              ) : (
+                <div>
+                  <p className="label mb-0">{provider.label}</p>
+                  <p className="text-sm text-bar-400">
+                    No key needed — nothing to configure.
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -222,7 +246,7 @@ export function SettingsForm({
                   {testing === provider.id ? "Testing…" : "Test connection"}
                 </button>
 
-                {provider.source === "database" ? (
+                {provider.needsKey && provider.source === "database" ? (
                   <ConfirmButton
                     label="Remove key"
                     confirmLabel="Remove it"

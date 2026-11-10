@@ -16,6 +16,7 @@ import { loadRecipesWithMakeability } from "@/lib/recipe-queries";
 import { hasPasswordSession, requireUser } from "@/lib/session";
 import { isOwner } from "@/lib/owner";
 import { pendingUpdateTag } from "@/lib/releases";
+import { preferredProvider } from "@/lib/providers/registry";
 
 
 export default async function HomePage() {
@@ -28,6 +29,8 @@ export default async function HomePage() {
     isOwner(user.id),
   ]);
   const canSignOut = await hasPasswordSession();
+  // Reads a setting; it does not call the provider.
+  const providerLabel = (await preferredProvider()).label;
   const updateTag = owner ? await pendingUpdateTag() : null;
 
   const makeable = recipes.filter((r) => r.evaluation.makeable);
@@ -51,8 +54,8 @@ export default async function HomePage() {
             <h2 className="font-display text-xl text-bar-200">Start with your shelf</h2>
             <p className="text-sm text-bar-400">
               Add the bottles, mixers and garnishes you keep around. Barback then
-              works out what you can make — from your own recipes and from
-              TheCocktailDB.
+              works out what you can make — from your own recipes and from{" "}
+              {providerLabel}.
             </p>
             <Link href="/inventory" className="btn-primary w-full">
               <PlusIcon className="size-5" />
@@ -140,7 +143,7 @@ export default async function HomePage() {
                 What else can I make?
               </span>
               <span className="block text-sm text-bar-400">
-                Search thousands of cocktails from TheCocktailDB, matched to your shelf.
+                Hundreds of cocktails from {providerLabel}, matched to your shelf.
               </span>
             </span>
             <ChevronRightIcon className="size-5 shrink-0 text-bar-400" />
