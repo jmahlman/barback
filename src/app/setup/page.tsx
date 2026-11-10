@@ -50,23 +50,25 @@ export default async function SetupPage() {
             down or misconfigured. Pick a real password and store it
             somewhere safe.
           </p>
+
+          {/* Inside the card rather than floating over the backdrop photo,
+              where tinted text on a near-transparent box was hard to read. */}
+          {mode !== "local" ? (
+            <p className="border-t border-bar-800 pt-2 text-xs text-brass-300">
+              This instance is configured for <strong>{mode}</strong> mode.
+              Setting up the administrator first means you always have a way
+              in that does not depend on it.
+            </p>
+          ) : null}
+
+          {!HAS_SESSION_SECRET ? (
+            <p className="border-t border-bar-800 pt-2 text-xs text-cherry-400">
+              <strong>BETTER_AUTH_SECRET is not set.</strong> You can create
+              the account, but you will be signed out whenever the server
+              restarts. Set it and restart before you rely on this instance.
+            </p>
+          ) : null}
         </section>
-
-        {!HAS_SESSION_SECRET ? (
-          <p className="rounded-xl border border-cherry-400/40 bg-cherry-400/5 p-3 text-xs text-cherry-400">
-            <strong>BETTER_AUTH_SECRET is not set.</strong> You can create the
-            account, but you will be signed out whenever the server restarts.
-            Set it and restart before you rely on this instance.
-          </p>
-        ) : null}
-
-        {mode !== "local" ? (
-          <p className="rounded-xl border border-brass-400/30 bg-brass-400/5 p-3 text-xs text-brass-300">
-            This instance is configured for <strong>{mode}</strong> mode.
-            Setting up the administrator first means you always have a way in
-            that does not depend on it.
-          </p>
-        ) : null}
 
         <SetupForm />
       </div>
