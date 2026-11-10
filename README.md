@@ -11,6 +11,31 @@ you can make tonight. Self-hosted, one container, no account anywhere else.
 [![CI](https://github.com/jmahlman/barback/actions/workflows/ci.yml/badge.svg)](https://github.com/jmahlman/barback/actions/workflows/ci.yml)
 [![Container](https://img.shields.io/badge/ghcr.io-barback-2496ED?logo=docker&logoColor=white)](https://github.com/jmahlman/barback/pkgs/container/barback)
 
+<table>
+  <tr>
+    <td align="center">
+      <a href="docs/screenshots/bar.png"><img src="docs/screenshots/bar.png" alt="The Bar tab: how many recipes you can make, and the ones ready to pour" width="400"></a><br>
+      <sub><b>Bar</b> — what you can pour tonight</sub>
+    </td>
+    <td align="center">
+      <a href="docs/screenshots/inventory.png"><img src="docs/screenshots/inventory.png" alt="The Inventory tab: bottles grouped by category, each marked in or out of stock" width="400"></a><br>
+      <sub><b>Inventory</b> — everything behind your bar</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="docs/screenshots/recipes.png"><img src="docs/screenshots/recipes.png" alt="The Recipes tab: your recipe book, each drink checked against your shelf" width="400"></a><br>
+      <sub><b>Recipes</b> — your book, checked against your shelf</sub>
+    </td>
+    <td align="center">
+      <a href="docs/screenshots/discover.png"><img src="docs/screenshots/discover.png" alt="The Discover tab: cocktails from cocktail.glass that your shelf can already make" width="400"></a><br>
+      <sub><b>Discover</b> — new cocktails you can already make</sub>
+    </td>
+  </tr>
+</table>
+
+<sub>Click any screenshot for full size.</sub>
+
 </div>
 
 ---
