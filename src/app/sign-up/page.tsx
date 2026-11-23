@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { AuthForm } from "@/components/auth-form";
 import { AuthBackdrop } from "@/components/auth-backdrop";
-import { signupsAllowed } from "@/lib/auth";
+import { baseUrl, signupsAllowed } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { isSetupComplete } from "@/lib/setup";
 
@@ -37,6 +37,7 @@ export default async function SignUpPage() {
       <AuthForm
         mode="sign-up"
         signupsAllowed
+        publicUrl={baseUrl()}
       />
     </AuthBackdrop>
   );

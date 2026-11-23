@@ -11,7 +11,8 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
-Nothing yet.
+- Opened over plain HTTP, the sign-in, sign-up and setup pages now say why
+  you won't stay signed in, and how to get in instead.
 
 ## 0.4.0
 

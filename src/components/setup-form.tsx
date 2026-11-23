@@ -5,8 +5,20 @@ import { useState, useTransition } from "react";
 import { completeSetup } from "@/actions/setup";
 import type { ActionResult } from "@/actions/inventory";
 import { PasswordField } from "@/components/password-field";
+import { InsecureSignInNotice, useSignInBlocked } from "@/components/insecure-sign-in-notice";
 
-export function SetupForm() {
+export function SetupForm({
+  publicUrl,
+  directAccess,
+}: {
+  /** BETTER_AUTH_URL. An https one means the browser needs a secure page. */
+  publicUrl: string;
+  /** Proxy or none mode, where this address is the break-glass route. */
+  directAccess: boolean;
+}) {
+  // Setup still works over plain HTTP, since the account is created either
+  // way; only staying signed in afterwards does not. So say so, and carry on.
+  const blocked = useSignInBlocked(publicUrl.startsWith("https://"));
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -14,6 +26,10 @@ export function SetupForm() {
   const fieldError = (name: string) => result?.fieldErrors?.[name];
 
   return (
+    <>
+    {blocked ? (
+      <InsecureSignInNotice publicUrl={publicUrl} directAccess={directAccess} context="setup" />
+    ) : null}
     <form
       action={(formData) => {
         startTransition(async () => {
@@ -152,5 +168,6 @@ export function SetupForm() {
         {pending ? "Setting up…" : "Create my account"}
       </button>
     </form>
+    </>
   );
 }

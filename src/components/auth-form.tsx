@@ -7,22 +7,30 @@ import { signIn, signUp } from "@/lib/auth-client";
 import { signInWithIdentifier } from "@/actions/sign-in";
 import { PasswordField } from "@/components/password-field";
 import { KeyIcon } from "@/components/icons";
+import { InsecureSignInNotice, useSignInBlocked } from "@/components/insecure-sign-in-notice";
 
 export function AuthForm({
   mode,
   signupsAllowed,
   passkeyDomain = null,
+  publicUrl,
+  directAccess = false,
 }: {
   mode: "sign-in" | "sign-up";
   signupsAllowed: boolean;
   /** Where passkeys work; null when this instance does not offer them. */
   passkeyDomain?: string | null;
+  /** BETTER_AUTH_URL. An https one means the browser needs a secure page. */
+  publicUrl: string;
+  /** Break-glass access in proxy or none mode. */
+  directAccess?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const isSignUp = mode === "sign-up";
+  const blocked = useSignInBlocked(publicUrl.startsWith("https://"));
 
   // Passkeys need a secure context: HTTPS, or localhost. Over plain HTTP the
   // browser has no WebAuthn at all, so the button is simply not offered.
@@ -126,6 +134,8 @@ export function AuthForm({
         </p>
       </div>
 
+      {blocked ? <InsecureSignInNotice publicUrl={publicUrl} directAccess={directAccess} /> : null}
+
       <form onSubmit={onSubmit} className="card space-y-4 p-5 shadow-xl shadow-black/40">
         {isSignUp ? (
           <div>
@@ -182,7 +192,7 @@ export function AuthForm({
           </p>
         ) : null}
 
-        <button type="submit" disabled={busy} className="btn-primary w-full">
+        <button type="submit" disabled={busy || blocked} className="btn-primary w-full">
           {busy ? "One moment…" : isSignUp ? "Create account" : "Sign in"}
         </button>
 

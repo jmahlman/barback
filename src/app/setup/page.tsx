@@ -5,6 +5,7 @@ import { AuthBackdrop } from "@/components/auth-backdrop";
 import { GlassIcon, KeyIcon } from "@/components/icons";
 import { getAuthMode, HAS_SESSION_SECRET } from "@/lib/auth-mode";
 import { isSetupComplete } from "@/lib/setup";
+import { baseUrl } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Welcome" };
 
@@ -70,7 +71,7 @@ export default async function SetupPage() {
           ) : null}
         </section>
 
-        <SetupForm />
+        <SetupForm publicUrl={baseUrl()} directAccess={mode !== "local"} />
       </div>
     </AuthBackdrop>
   );
