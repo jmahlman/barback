@@ -431,7 +431,7 @@ through the proxy:
 ```yaml
 services:
   barback:
-    image: barback:latest
+    image: ghcr.io/jmahlman/barback:latest
     container_name: barback
     restart: unless-stopped
     # Note: no "ports:" section. SWAG reaches it by container name.
@@ -448,10 +448,31 @@ services:
 networks:
   swag:
     external: true
+    # The name of the network SWAG is on. Yours may differ; see below.
+    name: swag
 
 volumes:
   barback-data:
 ```
+
+`swag` has to be the name of a network that already exists:
+`external: true` joins one and never creates it. If Compose says *network
+swag declared as external, but could not be found*, ask SWAG which networks
+it is on and put that name in `name:`:
+
+```bash
+docker inspect swag --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+```
+
+It is often `swag_default`, or whatever you named it (`proxy_net` is common on
+Synology). If it prints only `bridge`, SWAG is on Docker's default network,
+where containers cannot find each other by name: create one with
+`docker network create swag`, then add SWAG to it.
+
+To keep the data in a folder rather than a named volume, use its path, for
+example `- /volume2/docker/barback:/data`, and drop the `volumes:` block at the
+bottom. Barback runs as user ID 1000, so the folder must belong to it:
+`sudo chown -R 1000:1000 /volume2/docker/barback`.
 
 **2. Add the proxy conf** at
 `/config/nginx/proxy-confs/barback.subdomain.conf` in SWAG:
