@@ -30,6 +30,7 @@ model User {
 
   sessions    Session[]
   accounts    Account[]
+  passkeys    Passkey[]
   items       InventoryItem[]
   recipes     Recipe[]
   reviewNotes ReviewNote[]
@@ -82,6 +83,32 @@ model Account {
 
   @@map("account")
   @@index([userId])
+}
+
+/// A passkey: sign-in with Face ID, Touch ID, Windows Hello or a security key.
+/// Owned by the Better Auth passkey plugin. Only the public key is stored;
+/// the private key never leaves the person's device.
+model Passkey {
+  id           String    @id
+  /// What the person called it, e.g. "John's iPhone".
+  name         String?
+  publicKey    String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  /// Signature counter, checked on each use to catch a cloned key.
+  counter      Int
+  /// "singleDevice" or "multiDevice" (synced, e.g. through iCloud Keychain).
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  /// Identifies the authenticator model, e.g. iCloud Keychain.
+  aaguid       String?
+
+  @@map("passkey")
+  @@index([userId])
+  @@index([credentialID])
 }
 
 model Verification {

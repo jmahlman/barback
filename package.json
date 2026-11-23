@@ -31,6 +31,7 @@
     "licenses": "node scripts/generate-licenses.mjs"
   },
   "dependencies": {
+    "@better-auth/passkey": "1.7.18",
     "@better-auth/prisma-adapter": "1.7.18",
     "@prisma/adapter-better-sqlite3": "7.10.1",
     "@prisma/client": "7.10.1",

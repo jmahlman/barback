@@ -320,7 +320,7 @@ overrides it.
 | --- | --- | --- |
 | `AUTH_MODE` | `local` | `local`, `proxy` or `none` |
 | `BETTER_AUTH_SECRET` | — | **Required in `local` mode.** `openssl rand -base64 32` |
-| `BETTER_AUTH_URL` | `http://localhost:3000` | Public URL, no trailing slash |
+| `BETTER_AUTH_URL` | `http://localhost:3000` | Public URL, no trailing slash. Passkeys are tied to its domain |
 | `ALLOW_SIGNUPS` | `true` | Starting value for the Settings toggle |
 | `AUTH_PROXY_SHARED_SECRET` | — | `proxy` mode: strongly recommended |
 | `AUTH_PROXY_ADMIN_GROUP` | — | `proxy` mode: group mapped to admin |
@@ -347,6 +347,22 @@ else can register, and add people from the **People** page instead.
 
 Barback sends no email, so there is no self-service password reset — the
 owner sets passwords from People.
+
+**Passkeys.** Anyone can add a passkey under **Settings → Account** and then
+sign in with Face ID, Touch ID, Windows Hello or a security key instead of
+typing a password; browsers that support it offer the passkey right in the
+username field. A passkey is only ever an extra way in to an existing account,
+so it never gets around closed signups, and the password keeps working. Two
+things to know:
+
+- They need HTTPS (or `localhost`), like the barcode scanner.
+- They are tied to the domain in `BETTER_AUTH_URL`. Opened at any other
+  address, Barback does not offer them, and if the instance moves to a new
+  domain, everyone signs in with their password and adds new ones.
+
+Passkeys are for `local` mode only. In `proxy` mode your proxy handles
+sign-in, and break-glass access happens at the server's own address, where a
+passkey made for the public domain cannot work.
 
 ### `proxy`
 

@@ -20,7 +20,9 @@ import {
   maskSecret,
   SETTING_KEYS,
 } from "@/lib/settings";
-import { signupsAllowed } from "@/lib/auth";
+import { passkeyDomain, signupsAllowed } from "@/lib/auth";
+import { PasskeySettings, type PasskeyView } from "@/components/passkey-settings";
+import { db } from "@/lib/db";
 import { hasPasswordSession, requireUser } from "@/lib/session";
 import {
   getReleaseState,
@@ -124,6 +126,30 @@ export default async function SettingsPage() {
   const signupsOpen = await signupsAllowed();
   const canSignOut = await hasPasswordSession();
 
+  // Passkeys are for local sign-in. In proxy and none modes the only direct
+  // sign-in is break-glass at the server's own address, and a passkey made
+  // for the public domain cannot work there.
+  const passkeys: PasskeyView[] | null = mode === "local" && canSignOut
+    ? (
+        await db.passkey.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, name: true, createdAt: true, backedUp: true },
+        })
+      ).map((p) => ({
+        id: p.id,
+        name: p.name,
+        createdAt: p.createdAt?.toISOString() ?? null,
+        synced: p.backedUp,
+      }))
+    : null;
+  const accountPasskeys =
+    passkeys !== null ? (
+      <div className="pt-2">
+        <PasskeySettings passkeys={passkeys} domain={passkeyDomain()} />
+      </div>
+    ) : null;
+
   // Does nothing unless the owner switched automatic checking on, and then
   // at most once a day.
   if (owner) await maybeAutoCheck();
@@ -149,9 +175,17 @@ export default async function SettingsPage() {
   if (!owner) {
     return (
       <AppShell user={user}>
-        <PageHeader title="Settings" subtitle="How Barback matches your shelf and looks cocktails up." />
+        <PageHeader title="Settings" subtitle="Your account, and how Barback matches your shelf and looks cocktails up." />
         <PageBody>
-          <MatchingSettings initial={matching} canEdit={false} />
+          <section className="space-y-2">
+            <h2 className="font-display text-xl text-bar-200">Account</h2>
+            <p className="text-sm text-bar-400">{user.email}</p>
+            {canSignOut ? <SignOutButton /> : null}
+            {accountPasskeys}
+          </section>
+          <div className="border-t border-bar-800 pt-6">
+            <MatchingSettings initial={matching} canEdit={false} />
+          </div>
           <div className="border-t border-bar-800 pt-6">
             <SettingsForm
               providers={[]}
@@ -160,11 +194,6 @@ export default async function SettingsPage() {
               canEdit={false}
             />
           </div>
-          <section className="space-y-2 border-t border-bar-800 pt-6">
-            <h2 className="font-display text-xl text-bar-200">Account</h2>
-            <p className="text-sm text-bar-400">{user.email}</p>
-            {canSignOut ? <SignOutButton /> : null}
-          </section>
         </PageBody>
       </AppShell>
     );
@@ -228,9 +257,18 @@ export default async function SettingsPage() {
 
   return (
     <AppShell user={user}>
-      <PageHeader title="Settings" subtitle="How Barback matches your shelf and looks cocktails up." />
+      <PageHeader title="Settings" subtitle="Your account, and how Barback matches your shelf and looks cocktails up." />
       <PageBody>
-        <MatchingSettings initial={matching} canEdit />
+        <section className="space-y-2">
+          <h2 className="font-display text-xl text-bar-200">Account</h2>
+          <p className="text-sm text-bar-400">{user.email} · instance owner</p>
+          {canSignOut ? <SignOutButton /> : null}
+          {accountPasskeys}
+        </section>
+
+        <div className="border-t border-bar-800 pt-6">
+          <MatchingSettings initial={matching} canEdit />
+        </div>
 
         <div className="border-t border-bar-800 pt-6">
           <SettingsForm
@@ -305,12 +343,6 @@ export default async function SettingsPage() {
             </span>
             <ChevronRightIcon className="size-5 shrink-0 text-bar-400" />
           </Link>
-        </section>
-
-        <section className="space-y-2 border-t border-bar-800 pt-6">
-          <h2 className="font-display text-xl text-bar-200">Account</h2>
-          <p className="text-sm text-bar-400">{user.email} · instance owner</p>
-          {canSignOut ? <SignOutButton /> : null}
         </section>
       </PageBody>
     </AppShell>

@@ -11,7 +11,11 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
-Nothing yet.
+- Sign in with a passkey (Face ID, Touch ID, Windows Hello or a security
+  key). Add one under Settings → Account. Your password still works.
+- Passkeys need HTTPS and only work at the address in `BETTER_AUTH_URL`,
+  and only in local sign-in mode.
+- Account is now at the top of Settings.
 
 ## 0.3.0
 

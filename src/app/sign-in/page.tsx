@@ -6,7 +6,7 @@ import { signupsAllowed } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { isSetupComplete } from "@/lib/setup";
 import { BREAK_GLASS_ENABLED, getAuthMode } from "@/lib/auth-mode";
-import { auth } from "@/lib/auth";
+import { auth, passkeyDomain } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 
@@ -104,6 +104,9 @@ export default async function SignInPage() {
         <AuthForm
           mode="sign-in"
           signupsAllowed={mode === "local" && (await signupsAllowed())}
+          // Local mode only: break-glass access happens at the server's own
+          // address, where a passkey for the public domain cannot work.
+          passkeyDomain={mode === "local" ? passkeyDomain() : null}
         />
       </div>
     </AuthBackdrop>

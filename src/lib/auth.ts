@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
+import { passkey } from "@better-auth/passkey";
 import { APIError } from "better-auth/api";
 import { isAdminCreatingUser } from "@/lib/admin-context";
 import { getAuthMode } from "@/lib/auth-mode";
@@ -47,6 +48,17 @@ function sessionSecret(): string {
 
 export function baseUrl(): string {
   return (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+}
+
+/**
+ * The domain passkeys are bound to: the host part of BETTER_AUTH_URL.
+ *
+ * A passkey only works on the domain it was made for, so this must be the
+ * address people actually use. The plugin's own default is "localhost",
+ * which would reject every passkey on a real instance.
+ */
+export function passkeyDomain(): string {
+  return new URL(baseUrl()).hostname;
 }
 
 export const auth = betterAuth({
@@ -133,6 +145,16 @@ export const auth = betterAuth({
       defaultRole: "user",
       adminRoles: ["admin"],
       defaultBanReason: "Suspended by the instance owner",
+    }),
+    // Sign-in with Face ID, Touch ID, Windows Hello or a security key. Only
+    // ever an extra way in to an account that already exists: adding one
+    // needs a signed-in session, so it cannot get around closed signups,
+    // and the session it produces is held to the same rules as a password
+    // session (suspension, admin-only direct access outside local mode).
+    passkey({
+      rpID: passkeyDomain(),
+      rpName: "Barback",
+      // The origin defaults to BETTER_AUTH_URL's, which is what we want.
     }),
     // Must stay last: lets server actions set the session cookie.
     nextCookies(),
