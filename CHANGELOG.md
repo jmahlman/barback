@@ -11,8 +11,14 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.4.1
+
 - Opened over plain HTTP, the sign-in, sign-up and setup pages now say why
   you won't stay signed in, and how to get in instead.
+- README: fixed the SWAG example, and corrected how to sign in directly when
+  using a reverse proxy.
 
 ## 0.4.0
 
