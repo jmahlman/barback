@@ -399,6 +399,14 @@ proxy sends a username but no email, Barback stores a placeholder built from
 automatically the first time a real address arrives — without creating a
 second account.
 
+**On a new instance, set up with your proxy username.** The setup page asks
+for an administrator account before anything else, even in proxy mode. Give
+it the username your proxy sends (your Authelia login) and the same email.
+If neither matches, the first time you come through the proxy Barback creates
+a second, ordinary account for you, and the owner account is one the proxy
+never signs you in to. Usernames cannot be changed afterwards, so on a fresh
+instance the fix is to stop it, empty its data, and set up again.
+
 > **Set `AUTH_PROXY_SHARED_SECRET`.**
 >
 > Header-based identity is only as trustworthy as the guarantee that nothing
@@ -473,6 +481,10 @@ To keep the data in a folder rather than a named volume, use its path, for
 example `- /volume2/docker/barback:/data`, and drop the `volumes:` block at the
 bottom. Barback runs as user ID 1000, so the folder must belong to it:
 `sudo chown -R 1000:1000 /volume2/docker/barback`.
+
+With no ports published there is no way in except through SWAG. To keep a
+way in for when the proxy is down, see
+[Break-glass administrator access](#break-glass-administrator-access).
 
 **2. Add the proxy conf** at
 `/config/nginx/proxy-confs/barback.subdomain.conf` in SWAG:
@@ -632,9 +644,27 @@ Settings page then shows the mode as fixed until you remove it again.
 ### Break-glass administrator access
 
 In `proxy` and `none` mode the administrator can still sign in with a
-password at the instance's own address — `http://host:3000` rather than
-`https://barback.example.com`. This is what gets you in when the proxy is
-down, misconfigured, or you are on the LAN.
+password by reaching Barback directly rather than through the proxy. This is
+what gets you in when the proxy is down or misconfigured.
+
+**It has to be a secure page.** When `BETTER_AUTH_URL` is `https://…`, the
+sign-in cookie is one browsers only keep on HTTPS or on `localhost`. Opened as
+`http://nas:3000`, the password is accepted but the browser discards the
+cookie, and you land back on the sign-in form. Reach the port as `localhost`
+instead, through an SSH tunnel:
+
+```bash
+ssh -L 3000:localhost:3000 you@nas
+```
+
+then open `http://localhost:3000` on your own computer. This needs the port
+published on the server; publishing it to the server alone keeps it off your
+network while still letting a tunnel reach it:
+
+```yaml
+    ports:
+      - "127.0.0.1:3000:3000"
+```
 
 It is deliberately narrow:
 
