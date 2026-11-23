@@ -1,7 +1,7 @@
 services:
   barback:
     # The published image, built and pushed by the release workflow.
-    # Pin a version (…:0.2.0) if you would rather not move automatically.
+    # Pin a version (…:0.4.0) if you would rather not move automatically.
     image: ghcr.io/jmahlman/barback:latest
     # Building from a local checkout instead? Comment out "image" above and
     # uncomment these. The Dockerfile lives in docker/, but it builds from

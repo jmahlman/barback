@@ -704,7 +704,7 @@ The tag triggers `.github/workflows/release.yml`, which:
 4. writes release notes from the commits since the previous tag and publishes
    the GitHub Release — which is exactly what the app then shows.
 
-A tag containing a hyphen (`v0.3.0-rc.1`) is published as a pre-release and
+A tag containing a hyphen (`v0.5.0-rc.1`) is published as a pre-release and
 does not move `latest`.
 
 `.github/workflows/ci.yml` typechecks, builds and builds the Docker image on
