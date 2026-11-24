@@ -8,6 +8,8 @@
  * Providers are only ever called from a server action, never while rendering.
  */
 
+import type { SettingKey } from "@/lib/settings";
+
 export interface ProviderIngredient {
   /** Display name, e.g. "Blanco tequila". */
   name: string;
@@ -76,8 +78,21 @@ export interface CocktailProvider {
   readonly description: string;
   readonly attribution: string;
   readonly capabilities: ProviderCapabilities;
+  /**
+   * The API key this provider needs, or undefined when it needs none.
+   *
+   * The one place this is written down: the Settings page, saving a key and
+   * removing one all read it from here, so a provider added later cannot be
+   * half-wired into some of them and not others.
+   */
+  readonly apiKey?: {
+    /** The setting the key is stored under. */
+    setting: SettingKey;
+    /** Where to get one. */
+    signupUrl: string;
+  };
 
-  /** False when no API key is configured. */
+  /** False when it needs a key and none is configured. */
   isConfigured(): Promise<boolean>;
 
   /** Drinks whose name matches. Returns full detail. */
@@ -130,4 +145,9 @@ export class ProviderError extends Error {
     super(message);
     this.name = "ProviderError";
   }
+}
+
+/** The form field a provider's key is typed into on the Settings page. */
+export function apiKeyField(id: ProviderId): string {
+  return `apiKey-${id}`;
 }

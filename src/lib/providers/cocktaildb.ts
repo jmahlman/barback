@@ -142,6 +142,10 @@ async function lookupMany(ids: string[]): Promise<ProviderDrink[]> {
 export const cocktailDbProvider: CocktailProvider = {
   id: "cocktaildb",
   label: "TheCocktailDB",
+  apiKey: {
+    setting: SETTING_KEYS.cocktaildbApiKey,
+    signupUrl: "https://www.thecocktaildb.com/api.php",
+  },
   description:
     "Photos, glassware and category metadata, with measures already separated from ingredient names. Its free key returns only one drink per ingredient search, so Barback downloads the whole catalog once and matches your shelf locally instead. Not licensed for public instances.",
   attribution:

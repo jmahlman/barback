@@ -125,6 +125,10 @@ function dedupe(drinks: ProviderDrink[]): ProviderDrink[] {
 export const apiNinjasProvider: CocktailProvider = {
   id: "apininjas",
   label: "API Ninjas",
+  apiKey: {
+    setting: SETTING_KEYS.apiNinjasApiKey,
+    signupUrl: "https://api-ninjas.com/api/cocktail",
+  },
   description:
     "Text-only recipes. No photos or glassware, capped at 10 results per search, and ingredient matching is loose — searching “gin” can return drinks containing only ginger ale.",
   attribution: "Recipe data: API Ninjas (https://api-ninjas.com/api/cocktail)",

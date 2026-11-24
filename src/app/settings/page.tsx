@@ -10,7 +10,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ChevronRightIcon } from "@/components/icons";
 import { isOwner } from "@/lib/owner";
 import { PROVIDER_LIST } from "@/lib/providers/registry";
-import type { ProviderId } from "@/lib/providers/types";
+import { apiKeyField } from "@/lib/providers/types";
 import { cachedCountsByProvider } from "@/lib/providers/cache";
 import { cachedProductCounts } from "@/lib/products/cache";
 import { readQuota, remainingLookups } from "@/lib/products/quota";
@@ -42,33 +42,6 @@ import {
 } from "@/components/auth-mode-settings";
 
 export const metadata: Metadata = { title: "Settings" };
-
-type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
-
-/**
- * Where each provider's key lives, if it has one.
- *
- * Keyed by ProviderId rather than by string, so that adding a provider and
- * forgetting it here fails the typecheck. It used to be a plain string map,
- * which compiled happily and then crashed this page at runtime.
- */
-const PROVIDER_META: Record<
-  ProviderId,
-  { signupUrl: string; keyField: string; settingKey: SettingKey } | null
-> = {
-  // No key and no sign-up.
-  cocktailglass: null,
-  cocktaildb: {
-    signupUrl: "https://www.thecocktaildb.com/api.php",
-    keyField: "cocktaildbApiKey",
-    settingKey: SETTING_KEYS.cocktaildbApiKey,
-  },
-  apininjas: {
-    signupUrl: "https://api-ninjas.com/api/cocktail",
-    keyField: "apiNinjasApiKey",
-    settingKey: SETTING_KEYS.apiNinjasApiKey,
-  },
-};
 
 /** What each mode does, and what choosing it will change. */
 function buildModeOptions(current: string): AuthModeOption[] {
@@ -235,9 +208,10 @@ export default async function SettingsPage() {
 
   const providers: ProviderView[] = await Promise.all(
     PROVIDER_LIST.map(async (provider) => {
-      const meta = PROVIDER_META[provider.id];
-      const key = meta ? await getSetting(meta.settingKey) : "";
-      const source = meta ? await getSettingSource(meta.settingKey) : "default";
+      // Each provider says for itself whether it needs a key, and where.
+      const apiKey = provider.apiKey;
+      const key = apiKey ? await getSetting(apiKey.setting) : "";
+      const source = apiKey ? await getSettingSource(apiKey.setting) : "default";
       return {
         id: provider.id,
         label: provider.label,
@@ -246,11 +220,11 @@ export default async function SettingsPage() {
         // Only ever a masked form reaches the browser.
         maskedKey: maskSecret(key),
         configured: await provider.isConfigured(),
-        needsKey: meta !== null,
+        needsKey: Boolean(apiKey),
         source,
         cachedCount: counts[provider.id] ?? 0,
-        signupUrl: meta?.signupUrl ?? null,
-        keyField: meta?.keyField ?? null,
+        signupUrl: apiKey?.signupUrl ?? null,
+        keyField: apiKey ? apiKeyField(provider.id) : null,
       };
     }),
   );

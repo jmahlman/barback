@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { isOwner } from "@/lib/owner";
-import { SETTING_KEYS, setSetting } from "@/lib/settings";
-import { isProviderId } from "@/lib/providers/registry";
+import { SETTING_KEYS, setSetting, type SettingKey } from "@/lib/settings";
+import { getProvider, isProviderId, PROVIDER_LIST } from "@/lib/providers/registry";
+import { apiKeyField } from "@/lib/providers/types";
 import {
   AUTH_MODE_LOCKED,
   AUTH_MODE_SETTING,
@@ -30,9 +31,9 @@ async function requireOwner() {
 const schema = z.object({
   preferredProvider: z.string().refine(isProviderId, "Unknown provider."),
   fallbackEnabled: z.boolean(),
-  cocktaildbApiKey: z.string().trim().max(200),
-  apiNinjasApiKey: z.string().trim().max(200),
 });
+
+const keySchema = z.string().trim().max(200, "That key is too long.");
 
 /**
  * Save the provider configuration.
@@ -50,12 +51,22 @@ export async function saveProviderSettings(formData: FormData): Promise<ActionRe
   const parsed = schema.safeParse({
     preferredProvider: String(formData.get("preferredProvider") ?? "cocktailglass"),
     fallbackEnabled: formData.get("fallbackEnabled") === "on",
-    cocktaildbApiKey: String(formData.get("cocktaildbApiKey") ?? ""),
-    apiNinjasApiKey: String(formData.get("apiNinjasApiKey") ?? ""),
   });
 
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Those settings are invalid." };
+  }
+
+  // Every provider that takes a key, as each describes itself. Checked before
+  // anything is saved, so a bad key does not leave half the form written.
+  const keys: { setting: SettingKey; value: string }[] = [];
+  for (const provider of PROVIDER_LIST) {
+    if (!provider.apiKey) continue;
+    const key = keySchema.safeParse(String(formData.get(apiKeyField(provider.id)) ?? ""));
+    if (!key.success) {
+      return { ok: false, error: `${provider.label}: ${key.error.issues[0]?.message}` };
+    }
+    keys.push({ setting: provider.apiKey.setting, value: key.data });
   }
 
   const data = parsed.data;
@@ -63,11 +74,8 @@ export async function saveProviderSettings(formData: FormData): Promise<ActionRe
   await setSetting(SETTING_KEYS.preferredProvider, data.preferredProvider);
   await setSetting(SETTING_KEYS.fallbackEnabled, data.fallbackEnabled ? "true" : "false");
 
-  if (data.cocktaildbApiKey) {
-    await setSetting(SETTING_KEYS.cocktaildbApiKey, data.cocktaildbApiKey);
-  }
-  if (data.apiNinjasApiKey) {
-    await setSetting(SETTING_KEYS.apiNinjasApiKey, data.apiNinjasApiKey);
+  for (const { setting, value } of keys) {
+    if (value) await setSetting(setting, value);
   }
 
   revalidatePath("/settings");
@@ -83,17 +91,10 @@ export async function clearApiKey(providerId: string): Promise<ActionResult> {
   }
   if (!isProviderId(providerId)) return { ok: false, error: "Unknown provider." };
 
-  // A ternary used to pick between the two keys, so any third provider would
-  // have cleared API Ninjas' key by mistake.
-  const keyFor: Record<typeof providerId, (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS] | null> = {
-    cocktailglass: null,
-    cocktaildb: SETTING_KEYS.cocktaildbApiKey,
-    apininjas: SETTING_KEYS.apiNinjasApiKey,
-  };
-  const settingKey = keyFor[providerId];
-  if (!settingKey) return { ok: false, error: "That provider has no key to remove." };
+  const apiKey = getProvider(providerId).apiKey;
+  if (!apiKey) return { ok: false, error: "That provider has no key to remove." };
 
-  await setSetting(settingKey, "");
+  await setSetting(apiKey.setting, "");
 
   revalidatePath("/settings");
   revalidatePath("/discover");
