@@ -97,9 +97,9 @@ export interface CocktailProvider {
    *
    * This is the better way to do discovery where it is available: pull the
    * catalog once, cache it, and match against the shelf locally for ever
-   * after. `onProgress` reports how far along it is.
+   * after.
    */
-  fetchCatalog?(onProgress?: (done: number, total: number) => void): Promise<ProviderDrink[]>;
+  fetchCatalog?(): Promise<ProviderDrink[]>;
 }
 
 /** Build the namespaced cache/URL key for a drink. */

@@ -195,12 +195,12 @@ export const cocktailDbProvider: CocktailProvider = {
    * drink on the free development key, which made ingredient-led discovery
    * useless: eight shelf ingredients produced eight arbitrary cocktails.
    */
-  async fetchCatalog(onProgress?: (done: number, total: number) => void) {
+  async fetchCatalog() {
     const letters = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
     const found = new Map<string, ProviderDrink>();
     let failures = 0;
 
-    for (const [index, letter] of letters.entries()) {
+    for (const letter of letters) {
       try {
         const data = await apiGet<{ drinks: RawDrink[] | null }>(
           `search.php?f=${letter}`,
@@ -213,7 +213,6 @@ export const cocktailDbProvider: CocktailProvider = {
         // One bad letter should not lose the other thirty-five.
         failures += 1;
       }
-      onProgress?.(index + 1, letters.length);
     }
 
     if (found.size === 0) {

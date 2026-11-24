@@ -124,12 +124,10 @@ export const cocktailGlassProvider: CocktailProvider = {
   },
 
   /** One request for everything, rather than TheCocktailDB's thirty-six. */
-  async fetchCatalog(onProgress?: (done: number, total: number) => void) {
+  async fetchCatalog() {
     // Discover always wants a fresh copy when someone presses the button, so
     // skip the in-process reuse that search and lookup get.
     memo = null;
-    const drinks = await fetchAll();
-    onProgress?.(1, 1);
-    return drinks;
+    return fetchAll();
   },
 };
