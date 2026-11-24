@@ -71,8 +71,34 @@ function rejectProxy(reason: string, incoming?: Headers): null {
   return null;
 }
 
+/**
+ * A request with none of the proxy's headers is usually someone opening
+ * Barback directly, which is how break-glass works, so it is not warned about
+ * on every page load. It can also be a proxy that forwards nothing at all,
+ * though, so it is mentioned once per start, worded to cover both.
+ */
+let notedHeaderlessRequest = false;
+
+function noteHeaderlessRequest(): void {
+  if (notedHeaderlessRequest) return;
+  notedHeaderlessRequest = true;
+  console.info(
+    "[auth] a request arrived with no proxy headers. That is expected when someone " +
+      "opens Barback directly (administrator break-glass access). If it happened " +
+      "through your proxy, it is not forwarding them. Mentioned once until restart.",
+  );
+}
+
 async function resolveProxyUser(): Promise<CurrentUser | null> {
   const incoming = await headers();
+
+  // Nothing proxy-shaped at all: a direct visit, which break-glass handles
+  // next. Refused all the same, just without a warning per request.
+  const proxyShaped = Object.values(PROXY_HEADERS).some((name) => incoming.has(name));
+  if (!proxyShaped) {
+    noteHeaderlessRequest();
+    return null;
+  }
 
   // The shared secret, when configured, is checked before anything else is
   // read, so a request that bypassed the proxy never reaches provisioning.
@@ -97,11 +123,7 @@ async function resolveProxyUser(): Promise<CurrentUser | null> {
     .filter(Boolean);
 
   if (!username && !emailHeader) {
-    // Quiet when nothing proxy-shaped arrived at all: that is someone
-    // reaching the app directly, which break-glass handles next.
-    const sawAnything =
-      incoming.has(PROXY_HEADERS.secret) || incoming.has(PROXY_HEADERS.groups);
-    if (!sawAnything) return null;
+    // Some proxy headers arrived, but not the identity: a misconfiguration.
     return rejectProxy(
       `neither ${PROXY_HEADERS.user} nor ${PROXY_HEADERS.email} was present`,
       incoming,
