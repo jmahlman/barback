@@ -323,11 +323,15 @@ model CachedProduct {
   @@map("cached_product")
 }
 
-/// Cached result of a provider query, e.g. key "cocktaildb~i~gin".
+/// A provider lookup that has been run: an ingredient query
+/// ("cocktaildb~i~gin") or a whole-catalog download
+/// ("cocktailglass~catalog~catalog:cocktailglass"). fetchedAt is also what
+/// Discover's "Last fetched" note reads.
 
 model CachedFilter {
   key       String   @id
-  /// JSON array of idDrink strings.
+  /// JSON array of the drinks it returned, as namespaced cache keys
+  /// ("<provider>~<externalId>", e.g. "cocktailglass~margarita").
   drinkIds  String
   fetchedAt DateTime @default(now())
 
