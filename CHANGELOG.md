@@ -11,6 +11,10 @@ notes, breaking changes, and decisions worth explaining.
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.4.2
+
 - In proxy mode, opening Barback directly no longer logs a "proxy request
   rejected" warning on every page. It is mentioned once instead.
 
